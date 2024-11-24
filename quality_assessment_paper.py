@@ -132,6 +132,7 @@ if __name__ == "__main__":
     fs = 360 # sampling rate
     window_size = 3 * fs
     dataset = []
+    top_labels = []
 
     # find if peaks match = usable, if not = unusable
     for key in clean_signals.keys():
@@ -154,14 +155,16 @@ if __name__ == "__main__":
 
             i = i + window_size
 
-        dataset.append([noisy_signals[key][:0], labels])
+        dataset.append(torch.from_numpy(noisy_signals[key][:,0]).float())
+        top_labels.append(torch.from_numpy(labels).float())
         print(f"Peaks done and added to the dataset for record {key}")
 
         if len(dataset) == 10:
             break
     print(len(dataset))
 
-    trainData, valData, testData = dataset[:8]., dataset[8], dataset[9]
+    trainData, valData, testData = dataset[:8], dataset[8], dataset[9]
+    trainData.
 
     # define training hyperparameters
     INIT_LR = 1e-3

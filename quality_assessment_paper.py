@@ -8,11 +8,15 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
-import tqdm
+from tqdm import tqdm
 import wfdb
 import wfdb.processing
 import scipy
 import time
+from torch.utils.data import DataLoader
+from torchvision import transforms
+
+
 
 class NoiseDetector(nn.Module):
     def __init__(self, in_channels):
@@ -89,23 +93,25 @@ class NoiseDetector(nn.Module):
 if __name__ == "__main__":
 
     records_file = open("/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/RECORDS")
-    records = {}
+    noise_em = wfdb.rdrecord("/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-noise-stress-test-database-1.0.0/em").p_signal
+
+    clean_signals = {}
+    noisy_signals = {}
+    noise_perc = 0.2
+
+
     name = ""
     for char in records_file.read():
         if char == '\n':
             continue
         name = name+char
         if len(name) == 3:
-            records[name] = wfdb.rdrecord(f"/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/{name}")
+            clean_signals[name] = wfdb.rdrecord(f"/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/{name}").p_signal
+            noisy_signals[name] = clean_signals[name]*(1-noise_perc)  + noise_em*noise_perc
             name=""
-    print(records.keys())
+    print(clean_signals.keys())
 
     records_file.close()
-
-    noise_record = wfdb.rdrecord("/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-noise-stress-test-database-1.0.0/em")
-    print(noise_record.p_signal.shape, records['100'].p_signal.shape)
-
-    noisy_signal = records['100'].p_signal*4/5 + noise_record.p_signal*1/5
 
     """    plt.plot(records['100'].p_signal[:,0], label = 'clean', )
         plt.plot(noisy_signal[:,0], label = 'noisy')
@@ -125,27 +131,37 @@ if __name__ == "__main__":
 
     fs = 360 # sampling rate
     window_size = 3 * fs
-    record_length = len(noisy_signal[:,0])
-    labels = np.zeros(record_length) # 0: notusable, 1:usable
+    dataset = []
 
     # find if peaks match = usable, if not = unusable
-    i = 0
-    while i < record_length:
-        if i + window_size >= record_length:
-            rpeaks = wfdb.processing.xqrs_detect(records['100'].p_signal[i:, 0], fs=360, verbose=False)
-            rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signal[i:, 0], fs=360, verbose=False)
-            if set(rpeaks) == set(rpeaks_noisy):
-                labels[i:] = 1
+    for key in clean_signals.keys():
+
+        record_length = len(noisy_signals[key])
+        labels = np.zeros(record_length)  # 0: notusable, 1:usable
+        i = 0
+        while i < record_length:
+            if i + window_size >= record_length:
+                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:, 0], fs=360, verbose=False)
+                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:, 0], fs=360, verbose=False)
+                if set(rpeaks) == set(rpeaks_noisy):
+                    labels[i:] = 1
+                break
+            else:
+                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                if set(rpeaks) == set(rpeaks_noisy):
+                    labels[i:i+window_size] = 1
+
+            i = i + window_size
+
+        dataset.append([noisy_signals[key][:0], labels])
+        print(f"Peaks done and added to the dataset for record {key}")
+
+        if len(dataset) == 10:
             break
-        else:
-            rpeaks = wfdb.processing.xqrs_detect(records['100'].p_signal[i:i+window_size, 0], fs=360, verbose=False)
-            rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signal[i:i+window_size, 0], fs=360, verbose=False)
-            if set(rpeaks) == set(rpeaks_noisy):
-                labels[i:i+window_size] = 1
+    print(len(dataset))
 
-        i = i + window_size
-
-
+    trainData, valData, testData = dataset[:8]., dataset[8], dataset[9]
 
     # define training hyperparameters
     INIT_LR = 1e-3
@@ -157,6 +173,14 @@ if __name__ == "__main__":
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # initialize the train, validation, and test data loaders
+    trainDataLoader = DataLoader(trainData, shuffle=False,
+                                 batch_size=BATCH_SIZE)
+    valDataLoader = DataLoader(valData, batch_size=BATCH_SIZE)
+    testDataLoader = DataLoader(testData, batch_size=BATCH_SIZE)
+    # calculate steps per epoch for training and validation set
+    trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
+    valSteps = len(valDataLoader.dataset) // BATCH_SIZE
 
     print("Initializing model...")
     model = NoiseDetector(in_channels=1).to(device)
@@ -174,6 +198,36 @@ if __name__ == "__main__":
     # measure how long training is going to take
     print("[INFO] training the network...")
     startTime = time.time()
+
+    # loop over epochs
+    for e in tqdm(range(0, EPOCHS)):
+        # train the model
+        model.train()
+
+        # initialize the total training and validation loss
+        totalTrainLoss = 0
+        totalValLoss = 0
+        # initialize the number of correct predictions in the training
+        # and validation step
+        trainCorrect = 0
+        valCorrect = 0
+        # loop over the training set
+        for (x, y) in trainDataLoader:
+            # send the input to the device
+            (x, y) = (x.to(device), y.to(device))
+            # perform a forward pass and calculate the training loss
+            pred = model(x)
+            loss = lossFn(pred, y)
+            # zero out the gradients, perform the backpropagation step,
+            # and update the weights
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            # add the loss to the total training loss so far and
+            # calculate the number of correct predictions
+            totalTrainLoss += loss
+            trainCorrect += (pred.argmax(1) == y).type(
+                torch.float).sum().item()
 
 
 

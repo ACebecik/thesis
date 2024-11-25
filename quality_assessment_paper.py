@@ -254,9 +254,9 @@ if __name__ == "__main__":
             x = torch.unsqueeze(x,0)
             x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
 
-            # break if end of dataset
-            if x.shape[-1] < BATCH_SIZE:
-                break
+            """            # break if end of dataset
+                            if x.shape[-1] < BATCH_SIZE:
+                                break"""
 
             # send the input to the device
             (x, y) = (x.to(device), y.to(device))
@@ -278,29 +278,28 @@ if __name__ == "__main__":
 
 
 
-    #EVAL
-    # switch off autograd for evaluation
-    with torch.no_grad():
-        # set the model in evaluation mode
-        model.eval()
-        # loop over the validation set
-        for (x, y) in valDataLoader:
-            x = torch.unsqueeze(x,0)
-            x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+        #EVAL
+        # switch off autograd for evaluation
+        with torch.no_grad():
+            # set the model in evaluation mode
+            model.eval()
+            # loop over the validation set
+            for (x, y) in valDataLoader:
+                x = torch.unsqueeze(x,0)
+                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
 
+                # break if end of dataset
+                if x.shape[-1] < BATCH_SIZE:
+                    break
 
-        # break if end of dataset
-            if x.shape[-1] < BATCH_SIZE:
-                break
-
-            # send the input to the device
-            (x, y) = (x.to(device), y.to(device))
-            # make the predictions and calculate the validation loss
-            pred = model(x)
-            totalValLoss += lossFn(pred, y)
-            # calculate the number of correct predictions
-            valCorrect += (pred.argmax(1) == y.argmax(1)).type(
-                torch.float).sum().item()
+                # send the input to the device
+                (x, y) = (x.to(device), y.to(device))
+                # make the predictions and calculate the validation loss
+                pred = model(x)
+                totalValLoss += lossFn(pred, y)
+                # calculate the number of correct predictions
+                valCorrect += (pred.argmax(1) == y.argmax(1)).type(
+                    torch.float).sum().item()
 
         # calculate the average training and validation loss
         avgTrainLoss = totalTrainLoss / trainSteps

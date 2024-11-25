@@ -191,10 +191,10 @@ if __name__ == "__main__":
     X_train = torch.from_numpy(np.ravel(dataset[:8])).float()
     trainData = Dataset(X_train, y_train)
 
-    X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(np.ravel(top_labels[8])).float()
+    X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
     valData = Dataset(X_val, y_val)
 
-    X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(np.ravel(top_labels[9])).float()
+    X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(top_labels[9]).float()
     testData = Dataset(X_test, y_test)
 
     # define training hyperparameters
@@ -233,40 +233,50 @@ if __name__ == "__main__":
     print("[INFO] training the network...")
     startTime = time.time()
 
-    # loop over epochs
-    for e in tqdm(range(0, EPOCHS)):
-        # train the model
-        model.train()
 
-        # initialize the total training and validation loss
-        totalTrainLoss = 0
-        totalValLoss = 0
-        # initialize the number of correct predictions in the training
-        # and validation step
-        trainCorrect = 0
-        valCorrect = 0
-        # loop over the training set
-        for (x, y) in trainDataLoader:
-            x = torch.unsqueeze(x,0)
-            # send the input to the device
-            (x, y) = (x.to(device), y.to(device))
+    """
+        # loop over epochs
+        for e in tqdm(range(0, EPOCHS)):
+            # train the model
+            model.train()
+    
+            # initialize the total training and validation loss
+            totalTrainLoss = 0
+            totalValLoss = 0
+            # initialize the number of correct predictions in the training
+            # and validation step
+            trainCorrect = 0
+            valCorrect = 0
+            # loop over the training set
+            for (x, y) in trainDataLoader:
+                x = torch.unsqueeze(x,0)
+                # send the input to the device
+                (x, y) = (x.to(device), y.to(device))
+    
+                # perform a forward pass and calculate the training loss
+                pred = model(x)
+                #print(pred.shape, y.shape)
+                loss = lossFn(pred, y)
+                # zero out the gradients, perform the backpropagation step,
+                # and update the weights
+                opt.zero_grad()
+                loss.backward()
+                opt.step()
+                # add the loss to the total training loss so far and
+                # calculate the number of correct predictions
+                totalTrainLoss += loss
+                trainCorrect += (pred.argmax(1) == y.argmax(1)).type(
+                    torch.float).sum().item()
+    
+    """
 
-            # perform a forward pass and calculate the training loss
-            pred = model(x)
-            #print(pred.shape, y.shape)
-            loss = lossFn(pred, y)
-            # zero out the gradients, perform the backpropagation step,
-            # and update the weights
-            opt.zero_grad()
-            loss.backward()
-            opt.step()
-            # add the loss to the total training loss so far and
-            # calculate the number of correct predictions
-            totalTrainLoss += loss
-            trainCorrect += (pred.argmax(1) == y.argmax(1)).type(
-                torch.float).sum().item()
-
-
+    # initialize the total training and validation loss
+    totalTrainLoss = 0
+    totalValLoss = 0
+    # initialize the number of correct predictions in the training
+    # and validation step
+    trainCorrect = 0
+    valCorrect = 0
 
     # switch off autograd for evaluation
     with torch.no_grad():

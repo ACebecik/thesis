@@ -15,7 +15,22 @@ import scipy
 import time
 from torch.utils.data import DataLoader
 from torchvision import transforms
+from torch.utils.data import Dataset
 
+
+class Dataset(Dataset):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __getitem__(self, index):
+        x = torch.Tensor(self.x[index])
+        y = torch.Tensor(self.y[index])
+        return (x, y)
+
+    def __len__(self):
+        count = self.x.shape[0]
+        return count
 
 
 class NoiseDetector(nn.Module):
@@ -47,7 +62,8 @@ class NoiseDetector(nn.Module):
         self.drop4 = nn.Dropout(p=0.7)
 
         #FC layer and softmax
-        self.fc1 = nn.Linear(in_features=1600, out_features=1024)
+        self.fc1 = nn.Linear(in_features=324994, out_features=1024)
+#        self.fc1 = nn.Linear(in_features=1600, out_features=1024)
         self.relu5 = nn.ReLU()
 
         self.fc2 = nn.Linear(in_features=1024, out_features=2)
@@ -57,11 +73,15 @@ class NoiseDetector(nn.Module):
     def forward(self, x):
         "Define the forward pass"
 
+        print('before conv1 layer x.shape:', x.shape)
+
         #layer 1
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
         x = self.drop1(x)
+
+        print('before conv2 layer x.shape:', x.shape)
 
         #layer 2
         x = self.conv2(x)
@@ -69,11 +89,15 @@ class NoiseDetector(nn.Module):
         x = self.pool2(x)
         x = self.drop2(x)
 
+        print('before conv3 layer x.shape:', x.shape)
+
         #layer 3
         x = self.conv3(x)
         x = self.relu3(x)
         x = self.pool3(x)
         x = self.drop3(x)
+
+        print('before conv4 layer x.shape:', x.shape)
 
         #layer 4
         x = self.conv4(x)
@@ -81,8 +105,11 @@ class NoiseDetector(nn.Module):
         x = self.pool4(x)
         x = self.drop4(x)
 
+        print('before linear1 layer x.shape:', x.shape)
         x = self.fc1(x)
         x = self.relu5(x)
+
+        print('before linear2 layer x.shape:', x.shape)
 
         x = self.fc2(x)
         output = self.logSoftmax(x)
@@ -163,19 +190,9 @@ if __name__ == "__main__":
             break
     print(len(dataset))
 
-    bs = torch.from_numpy(np.ravel(dataset[:8])).float().shape[0]
-    flattened_tensor = torch.from_numpy(np.ravel(dataset[:8])).float().reshape(bs//2, 2)
-    trainData = [flattened_tensor, torch.from_numpy(np.ravel(top_labels[:8])).float().reshape(bs//2, 2)]
-
-
-    bs  = torch.from_numpy(np.ravel(dataset[8])).float().shape[0]
-    flattened_tensor = torch.from_numpy(np.ravel(dataset[8])).float().reshape(bs//2, 2)
-    valData = [flattened_tensor, torch.from_numpy(np.ravel(top_labels[8])).float().reshape(bs//2, 2)]
-
-
-    bs  = torch.from_numpy(np.ravel(dataset[9])).float().shape[0]
-    flattened_tensor = torch.from_numpy(np.ravel(dataset[9])).float().reshape(bs//2, 2)
-    testData = [flattened_tensor, torch.from_numpy(np.ravel(top_labels[9])).float().reshape(bs//2, 2)]
+    trainData = [torch.from_numpy(np.ravel(dataset[:8])).float(), torch.from_numpy(np.ravel(top_labels[:8])).float()]
+    valData = [torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(np.ravel(top_labels[8])).float()]
+    testData = [torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(np.ravel(top_labels[9])).float()]
 
 
     # define training hyperparameters
@@ -200,7 +217,7 @@ if __name__ == "__main__":
     print("Initializing model...")
     model = NoiseDetector(in_channels=1).to(device)
     opt = optim.Adam(model.parameters(), lr=INIT_LR)
-    lossFn = nn.NLLLoss()
+    lossFn = nn.CrossEntropyLoss()
 
     # initialize a dictionary to store training history
     H = {
@@ -228,8 +245,10 @@ if __name__ == "__main__":
         valCorrect = 0
         # loop over the training set
         for (x, y) in trainDataLoader:
+            (x, y) = (torch.unsqueeze(x,0), torch.unsqueeze(y,0))
             # send the input to the device
             (x, y) = (x.to(device), y.to(device))
+
             # perform a forward pass and calculate the training loss
             pred = model(x)
             loss = lossFn(pred, y)

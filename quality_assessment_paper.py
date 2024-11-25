@@ -163,9 +163,19 @@ if __name__ == "__main__":
             break
     print(len(dataset))
 
-    trainData = [torch.from_numpy(np.ravel(dataset[:8])).float(), torch.from_numpy(np.ravel(top_labels[:8])).float()]
-    valData = [torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(np.ravel(top_labels[8])).float()]
-    testData = [torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(np.ravel(top_labels[9])).float()]
+    bs = torch.from_numpy(np.ravel(dataset[:8])).float().shape[0]
+    flattened_tensor = torch.from_numpy(np.ravel(dataset[:8])).float().reshape(bs//2, 2)
+    trainData = [flattened_tensor, torch.from_numpy(np.ravel(top_labels[:8])).float().reshape(bs//2, 2)]
+
+
+    bs  = torch.from_numpy(np.ravel(dataset[8])).float().shape[0]
+    flattened_tensor = torch.from_numpy(np.ravel(dataset[8])).float().reshape(bs//2, 2)
+    valData = [flattened_tensor, torch.from_numpy(np.ravel(top_labels[8])).float().reshape(bs//2, 2)]
+
+
+    bs  = torch.from_numpy(np.ravel(dataset[9])).float().shape[0]
+    flattened_tensor = torch.from_numpy(np.ravel(dataset[9])).float().reshape(bs//2, 2)
+    testData = [flattened_tensor, torch.from_numpy(np.ravel(top_labels[9])).float().reshape(bs//2, 2)]
 
 
     # define training hyperparameters

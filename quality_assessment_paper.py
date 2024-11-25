@@ -155,16 +155,18 @@ if __name__ == "__main__":
 
             i = i + window_size
 
-        dataset.append(torch.from_numpy(noisy_signals[key][:,0]).float())
-        top_labels.append(torch.from_numpy(labels).float())
+        dataset.append(noisy_signals[key][:,0])
+        top_labels.append(labels)
         print(f"Peaks done and added to the dataset for record {key}")
 
         if len(dataset) == 10:
             break
     print(len(dataset))
 
-    trainData, valData, testData = dataset[:8], dataset[8], dataset[9]
-    trainData.
+    trainData = [torch.from_numpy(np.ravel(dataset[:8])).float(), torch.from_numpy(np.ravel(top_labels[:8])).float()]
+    valData = [torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(np.ravel(top_labels[8])).float()]
+    testData = [torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(np.ravel(top_labels[9])).float()]
+
 
     # define training hyperparameters
     INIT_LR = 1e-3

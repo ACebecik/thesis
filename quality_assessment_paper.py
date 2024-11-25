@@ -62,10 +62,11 @@ class NoiseDetector(nn.Module):
         self.drop4 = nn.Dropout(p=0.7)
 
         #FC layer and softmax
-        self.fc1 = nn.Linear(in_features=324994, out_features=1024)
-#        self.fc1 = nn.Linear(in_features=1600, out_features=1024)
+        self.flatten1 = nn.Flatten()
+        self.fc1 = nn.Linear(in_features=61, out_features=1024)
         self.relu5 = nn.ReLU()
 
+        self.flatten2 = nn.Flatten()
         self.fc2 = nn.Linear(in_features=1024, out_features=2)
         self.logSoftmax = nn.LogSoftmax()
 
@@ -106,11 +107,13 @@ class NoiseDetector(nn.Module):
         x = self.drop4(x)
 
         print('before linear1 layer x.shape:', x.shape)
+        x = self.flatten1(x)
         x = self.fc1(x)
         x = self.relu5(x)
 
         print('before linear2 layer x.shape:', x.shape)
 
+        x = self.flatten2(x)
         x = self.fc2(x)
         output = self.logSoftmax(x)
 
@@ -140,19 +143,6 @@ if __name__ == "__main__":
 
     records_file.close()
 
-    """    plt.plot(records['100'].p_signal[:,0], label = 'clean', )
-        plt.plot(noisy_signal[:,0], label = 'noisy')
-        plt.legend()
-        plt.show()
-    
-        rpeaks = wfdb.processing.xqrs_detect(records['100'].p_signal[:, 0], fs=360, verbose=False)
-    
-        rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signal[:,0], fs=360, verbose=False)
-        plt.plot(noisy_signal[:,0])
-        plt.plot(rpeaks, records['100'].p_signal[:, 0][rpeaks], "x")
-        plt.show()
-    
-        print(rpeaks_noisy.shape, rpeaks.shape)"""
 
     # window size is 3 seconds of measurement to indicate clean / noisy fragment
 
@@ -190,14 +180,18 @@ if __name__ == "__main__":
             break
     print(len(dataset))
 
-    trainData = [torch.from_numpy(np.ravel(dataset[:8])).float(), torch.from_numpy(np.ravel(top_labels[:8])).float()]
-    valData = [torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(np.ravel(top_labels[8])).float()]
-    testData = [torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(np.ravel(top_labels[9])).float()]
+    X_train, y_train = torch.from_numpy(np.ravel(dataset[:8])).float(), torch.from_numpy(np.ravel(top_labels[:8])).float()
+    trainData = Dataset(X_train, y_train)
 
+    X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(np.ravel(top_labels[8])).float()
+    valData = Dataset(X_val, y_val)
+
+    X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(np.ravel(top_labels[9])).float()
+    testData = Dataset(X_test, y_test)
 
     # define training hyperparameters
     INIT_LR = 1e-3
-    BATCH_SIZE = 64
+    BATCH_SIZE = 1024
     EPOCHS = 10
     # define the train and val splits
     TRAIN_SPLIT = 0.75
@@ -251,6 +245,7 @@ if __name__ == "__main__":
 
             # perform a forward pass and calculate the training loss
             pred = model(x)
+            print(pred.shape, y.shape)
             loss = lossFn(pred, y)
             # zero out the gradients, perform the backpropagation step,
             # and update the weights

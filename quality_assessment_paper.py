@@ -17,6 +17,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.utils.data import Dataset
 from sklearn.metrics import classification_report
+import argparse
+import pickle
 
 
 
@@ -234,50 +236,49 @@ if __name__ == "__main__":
     startTime = time.time()
 
 
-    """
-        # loop over epochs
-        for e in tqdm(range(0, EPOCHS)):
-            # train the model
-            model.train()
-    
-            # initialize the total training and validation loss
-            totalTrainLoss = 0
-            totalValLoss = 0
-            # initialize the number of correct predictions in the training
-            # and validation step
-            trainCorrect = 0
-            valCorrect = 0
-            # loop over the training set
-            for (x, y) in trainDataLoader:
-                x = torch.unsqueeze(x,0)
-                # send the input to the device
-                (x, y) = (x.to(device), y.to(device))
-    
-                # perform a forward pass and calculate the training loss
-                pred = model(x)
-                #print(pred.shape, y.shape)
-                loss = lossFn(pred, y)
-                # zero out the gradients, perform the backpropagation step,
-                # and update the weights
-                opt.zero_grad()
-                loss.backward()
-                opt.step()
-                # add the loss to the total training loss so far and
-                # calculate the number of correct predictions
-                totalTrainLoss += loss
-                trainCorrect += (pred.argmax(1) == y.argmax(1)).type(
-                    torch.float).sum().item()
-    
-    """
+    # TRAINING
+    # loop over epochs
+    for e in tqdm(range(0, EPOCHS)):
+        # train the model
+        model.train()
 
-    # initialize the total training and validation loss
-    totalTrainLoss = 0
-    totalValLoss = 0
-    # initialize the number of correct predictions in the training
-    # and validation step
-    trainCorrect = 0
-    valCorrect = 0
+        # initialize the total training and validation loss
+        totalTrainLoss = 0
+        totalValLoss = 0
+        # initialize the number of correct predictions in the training
+        # and validation step
+        trainCorrect = 0
+        valCorrect = 0
+        # loop over the training set
+        for (x, y) in trainDataLoader:
+            x = torch.unsqueeze(x,0)
+            x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
 
+            # break if end of dataset
+            if x.shape[-1] < BATCH_SIZE:
+                break
+
+            # send the input to the device
+            (x, y) = (x.to(device), y.to(device))
+
+            # perform a forward pass and calculate the training loss
+            pred = model(x)
+            #print(pred.shape, y.shape)
+            loss = lossFn(pred, y)
+            # zero out the gradients, perform the backpropagation step,
+            # and update the weights
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            # add the loss to the total training loss so far and
+            # calculate the number of correct predictions
+            totalTrainLoss += loss
+            trainCorrect += (pred.argmax(1) == y.argmax(1)).type(
+                torch.float).sum().item()
+
+
+
+    #EVAL
     # switch off autograd for evaluation
     with torch.no_grad():
         # set the model in evaluation mode
@@ -285,6 +286,12 @@ if __name__ == "__main__":
         # loop over the validation set
         for (x, y) in valDataLoader:
             x = torch.unsqueeze(x,0)
+            x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+
+
+        # break if end of dataset
+            if x.shape[-1] < BATCH_SIZE:
+                break
 
             # send the input to the device
             (x, y) = (x.to(device), y.to(device))
@@ -295,30 +302,31 @@ if __name__ == "__main__":
             valCorrect += (pred.argmax(1) == y.argmax(1)).type(
                 torch.float).sum().item()
 
-    # calculate the average training and validation loss
-    avgTrainLoss = totalTrainLoss / trainSteps
-    avgValLoss = totalValLoss / valSteps
-    # calculate the training and validation accuracy
-    trainCorrect = trainCorrect / len(trainDataLoader.dataset)
-    valCorrect = valCorrect / len(valDataLoader.dataset)
-    # update our training history
-    H["train_loss"].append(avgTrainLoss.cpu().detach().numpy())
-    H["train_acc"].append(trainCorrect)
-    H["val_loss"].append(avgValLoss.cpu().detach().numpy())
-    H["val_acc"].append(valCorrect)
-    # print the model training and validation information
-    print("[INFO] EPOCH: {}/{}".format(e + 1, EPOCHS))
-    print("Train loss: {:.6f}, Train accuracy: {:.4f}".format(
-        avgTrainLoss, trainCorrect))
-    print("Val loss: {:.6f}, Val accuracy: {:.4f}\n".format(
-        avgValLoss, valCorrect))
+        # calculate the average training and validation loss
+        avgTrainLoss = totalTrainLoss / trainSteps
+        avgValLoss = totalValLoss / valSteps
+        # calculate the training and validation accuracy
+        trainCorrect = trainCorrect / len(trainDataLoader.dataset)
+        valCorrect = valCorrect / len(valDataLoader.dataset)
+        # update our training history
+        H["train_loss"].append(avgTrainLoss.detach().numpy())
+        H["train_acc"].append(trainCorrect)
+        H["val_loss"].append(avgValLoss.detach().numpy())
+        H["val_acc"].append(valCorrect)
+        # print the model training and validation information
+        print("[INFO] EPOCH: {}/{}".format(e + 1, EPOCHS))
+        print("Train loss: {:.6f}, Train accuracy: {:.4f}".format(
+            avgTrainLoss, trainCorrect))
+        print("Val loss: {:.6f}, Val accuracy: {:.4f}\n".format(
+            avgValLoss, valCorrect))
 
-    # finish measuring how long training took
-    endTime = time.time()
-    print("[INFO] total time taken to train the model: {:.2f}s".format(
-        endTime - startTime))
+        # finish measuring how long training took
+        endTime = time.time()
+        print("[INFO] total time taken to train the model: {:.2f}s".format(
+            endTime - startTime))
 
-    """    
+
+    """    #TEST
         # we can now evaluate the network on the test set
         print("[INFO] evaluating network...")
         # turn off autograd for testing evaluation
@@ -331,6 +339,11 @@ if __name__ == "__main__":
             # loop over the test set
             for (x, y) in testDataLoader:
                 x = torch.unsqueeze(x,0)
+                x, y = torch.unsqueeze(x, 0), torch.unsqueeze(y, 0)
+    
+                # break if end of dataset
+                if x.shape[-1] < BATCH_SIZE:
+                    break
     
                 # send the input to the device
                 x = x.to(device)
@@ -340,3 +353,22 @@ if __name__ == "__main__":
         # generate a classification report
         print(classification_report(testData.targets.cpu().numpy(),
                                     np.array(preds), target_names=testData.classes))"""
+
+    # plot the training loss and accuracy
+    plt.style.use("ggplot")
+    plt.figure()
+    plt.plot(H["train_loss"], label="train_loss")
+    plt.plot(H["val_loss"], label="val_loss")
+    plt.plot(H["train_acc"], label="train_acc")
+    plt.plot(H["val_acc"], label="val_acc")
+    plt.title("Training Loss and Accuracy on Dataset")
+    plt.xlabel("Epoch #")
+    plt.ylabel("Loss/Accuracy")
+    plt.legend(loc="lower left")
+    plt.show()
+
+    # save the model to disk
+    model_pkl_file = "noise_detector_model.pkl"
+
+    with open(model_pkl_file, 'wb') as file:
+        pickle.dump(model, file)

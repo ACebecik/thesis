@@ -16,6 +16,8 @@ import time
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.utils.data import Dataset
+from sklearn.metrics import classification_report
+
 
 
 class Dataset(Dataset):
@@ -264,6 +266,8 @@ if __name__ == "__main__":
             trainCorrect += (pred.argmax(1) == y.argmax(1)).type(
                 torch.float).sum().item()
 
+
+
     # switch off autograd for evaluation
     with torch.no_grad():
         # set the model in evaluation mode
@@ -303,22 +307,26 @@ if __name__ == "__main__":
     endTime = time.time()
     print("[INFO] total time taken to train the model: {:.2f}s".format(
         endTime - startTime))
-    # we can now evaluate the network on the test set
-    print("[INFO] evaluating network...")
-    # turn off autograd for testing evaluation
-    with torch.no_grad():
-        # set the model in evaluation mode
-        model.eval()
 
-        # initialize a list to store our predictions
-        preds = []
-        # loop over the test set
-        for (x, y) in testDataLoader:
-            # send the input to the device
-            x = x.to(device)
-            # make the predictions and add them to the list
-            pred = model(x)
-            preds.extend(pred.argmax(axis=1).cpu().numpy())
-    # generate a classification report
-    print(classification_report(testData.targets.cpu().numpy(),
-                                np.array(preds), target_names=testData.classes))
+    """    
+        # we can now evaluate the network on the test set
+        print("[INFO] evaluating network...")
+        # turn off autograd for testing evaluation
+        with torch.no_grad():
+            # set the model in evaluation mode
+            model.eval()
+    
+            # initialize a list to store our predictions
+            preds = []
+            # loop over the test set
+            for (x, y) in testDataLoader:
+                x = torch.unsqueeze(x,0)
+    
+                # send the input to the device
+                x = x.to(device)
+                # make the predictions and add them to the list
+                pred = model(x)
+                preds.extend(pred.argmax(axis=1).cpu().numpy())
+        # generate a classification report
+        print(classification_report(testData.targets.cpu().numpy(),
+                                    np.array(preds), target_names=testData.classes))"""

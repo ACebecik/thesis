@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     clean_signals = {}
     noisy_signals = {}
-    noise_perc = 0.2
+    noise_perc = 0.4
 
 
     name = ""
@@ -156,7 +156,8 @@ if __name__ == "__main__":
     # window size is 3 seconds of measurement to indicate clean / noisy fragment
 
     fs = 360 # sampling rate
-    window_size = 3 * fs
+    #window_size = 3 * fs
+    window_size = 384
     dataset = []
     top_labels = []
 
@@ -190,23 +191,23 @@ if __name__ == "__main__":
         top_labels.append(labels)
         print(f"Peaks done and added to the dataset for record {key}")
 
-        if len(dataset) == 40:
+        if len(dataset) == 10:
             break
 
-    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:38]), (len(np.ravel(top_labels[:38])),1))).float()
-    X_train = torch.from_numpy(np.ravel(dataset[:38])).float()
+    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:8]), (len(np.ravel(top_labels[:8])),1))).float()
+    X_train = torch.from_numpy(np.ravel(dataset[:8])).float()
     trainData = Dataset(X_train, y_train)
 
-    X_val, y_val = torch.from_numpy(np.ravel(dataset[38])).float(), torch.from_numpy(top_labels[38]).float()
+    X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
     valData = Dataset(X_val, y_val)
 
-    X_test, y_test = torch.from_numpy(np.ravel(dataset[39])).float(), torch.from_numpy(top_labels[39]).float()
+    X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(top_labels[9]).float()
     testData = Dataset(X_test, y_test)
 
     # define training hyperparameters
-    INIT_LR = 1e-2
+    INIT_LR = 1e-3
     BATCH_SIZE = 384
-    EPOCHS = 250
+    EPOCHS = 100
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -247,6 +248,8 @@ if __name__ == "__main__":
         # initialize the total training and validation loss
         totalTrainLoss = 0
         totalValLoss = 0
+        train_acc = 0
+        val_acc = 0
 
 
         # loop over the training set
@@ -270,6 +273,12 @@ if __name__ == "__main__":
             opt.zero_grad()
             loss.backward()
             opt.step()
+
+            getPreds = nn.Sigmoid()
+            predProb = getPreds(pred)
+
+            train_acc = train_acc +  ((predProb>0.5) ==y).sum() # correctly predicted samples
+
             # add the loss to the total training loss so far and
             # calculate the number of correct predictions
             totalTrainLoss = totalTrainLoss + loss * BATCH_SIZE
@@ -296,20 +305,33 @@ if __name__ == "__main__":
                 pred = model(x)
                 totalValLoss = totalValLoss + lossFn(pred, y) * BATCH_SIZE
 
+                predProbVal = getPreds(pred)
+                val_acc = val_acc + ((predProbVal>0.5)==y).sum()
+
 
         # calculate the average training and validation loss
         avgTrainLoss = totalTrainLoss / len(trainDataLoader.dataset)
         avgValLoss = totalValLoss / len(valDataLoader.dataset)
+        avgTrainAcc = train_acc / len(trainDataLoader.dataset)
+        avgValAcc = val_acc / len(valDataLoader.dataset)
 
         # update our training history
         H["train_loss"].append(avgTrainLoss.detach().numpy())
         H["val_loss"].append(avgValLoss.detach().numpy())
+        H["train_acc"].append(avgTrainAcc.detach().numpy())
+        H["val_acc"].append(avgValAcc.detach().numpy())
+
+
         # print the model training and validation information
         print("[INFO] EPOCH: {}/{}".format(e + 1, EPOCHS))
         print("Train loss: {:.6f}".format(
             avgTrainLoss))
+        print("Train acc: {:.6f}".format(
+            avgTrainAcc))
         print("Val loss: {:.6f}".format(
             avgValLoss))
+        print("Val acc: {:.6f}".format(
+            avgValAcc))
 
     # finish measuring how long training took
     endTime = time.time()

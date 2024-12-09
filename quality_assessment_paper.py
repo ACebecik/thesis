@@ -67,7 +67,7 @@ class NoiseDetector(nn.Module):
 
         #FC layer and softmax
         self.flatten1 = nn.Flatten()
-        self.fc1 = nn.Linear(in_features=1536, out_features=2)
+        self.fc1 = nn.Linear(in_features=1536, out_features=1)
         #self.relu5 = nn.ReLU()
     """
             #self.flatten2 = nn.Flatten()
@@ -153,7 +153,6 @@ if __name__ == "__main__":
 
     records_file.close()
 
-
     # window size is 3 seconds of measurement to indicate clean / noisy fragment
 
     fs = 360 # sampling rate
@@ -164,27 +163,26 @@ if __name__ == "__main__":
     # find if peaks match = usable, if not = unusable
     for key in clean_signals.keys():
 
-
         record_length = len(noisy_signals[key])
-        labels = np.zeros((record_length, 2))  # 0: not usable class , 1: usable ecg class
+        labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
         i = 0
         while i < record_length:
             if i + window_size >= record_length:
                 rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:, 0], fs=360, verbose=False)
                 rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:, 0], fs=360, verbose=False)
                 if set(rpeaks) == set(rpeaks_noisy):
-                    labels[i:, 1] = 1
+                    labels[i:] = 1
                 else:
-                    labels[i:, 0] = 1
+                    labels[i:] = 0
 
                 break
             else:
                 rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
                 rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
                 if set(rpeaks) == set(rpeaks_noisy):
-                    labels[i:i+window_size, 1] = 1
+                    labels[i:i+window_size] = 1
                 else:
-                    labels[i:i+window_size, 0] = 1
+                    labels[i:i+window_size] = 0
 
             i = i + window_size
 
@@ -195,7 +193,7 @@ if __name__ == "__main__":
         if len(dataset) == 10:
             break
 
-    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:8]), (len(np.ravel(top_labels[:8]))//2,2))).float()
+    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:8]), (len(np.ravel(top_labels[:8])),1))).float()
     X_train = torch.from_numpy(np.ravel(dataset[:8])).float()
     trainData = Dataset(X_train, y_train)
 
@@ -206,12 +204,10 @@ if __name__ == "__main__":
     testData = Dataset(X_test, y_test)
 
     # define training hyperparameters
-    INIT_LR = 1e-3
+    INIT_LR = 1e-2
     BATCH_SIZE = 384
-    EPOCHS = 25
-    # define the train and val splits
-    TRAIN_SPLIT = 0.75
-    VAL_SPLIT = 1 - TRAIN_SPLIT
+    EPOCHS = 1000
+
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -241,9 +237,6 @@ if __name__ == "__main__":
     print("[INFO] training the network...")
     startTime = time.time()
 
-    # initialize the total training and validation loss
-    totalTrainLoss = 0
-    totalValLoss = 0
 
     # TRAINING
     # loop over epochs
@@ -251,11 +244,11 @@ if __name__ == "__main__":
         # train the model
         model.train()
 
+        # initialize the total training and validation loss
+        totalTrainLoss = 0
+        totalValLoss = 0
 
-        # initialize the number of correct predictions in the training
-        # and validation step
-        trainCorrect = 0
-        valCorrect = 0
+
         # loop over the training set
         for (x, y) in trainDataLoader:
             x = torch.unsqueeze(x,0)
@@ -279,48 +272,44 @@ if __name__ == "__main__":
             opt.step()
             # add the loss to the total training loss so far and
             # calculate the number of correct predictions
-            totalTrainLoss += loss
+            totalTrainLoss = totalTrainLoss + loss * BATCH_SIZE
 
+
+
+        #EVAL
+        # switch off autograd for evaluation
+        with torch.no_grad():
+            # set the model in evaluation mode
+            model.eval()
+            # loop over the validation set
+            for (x, y) in valDataLoader:
+                x = torch.unsqueeze(x,0)
+                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+
+                # break if end of dataset
+                if x.shape[-1] < BATCH_SIZE:
+                    break
+
+                # send the input to the device
+                (x, y) = (x.to(device), y.to(device))
+                # make the predictions and calculate the validation loss
+                pred = model(x)
+                totalValLoss = totalValLoss + lossFn(pred, y) * BATCH_SIZE
+
+
+        # calculate the average training and validation loss
+        avgTrainLoss = totalTrainLoss / len(trainDataLoader.dataset)
+        avgValLoss = totalValLoss / len(valDataLoader.dataset)
+
+        # update our training history
+        H["train_loss"].append(avgTrainLoss.detach().numpy())
+        H["val_loss"].append(avgValLoss.detach().numpy())
+        # print the model training and validation information
         print("[INFO] EPOCH: {}/{}".format(e + 1, EPOCHS))
-        print("Train loss: {:.6f}".format(loss))
-
-
-    #EVAL
-    # switch off autograd for evaluation
-    with torch.no_grad():
-        # set the model in evaluation mode
-        model.eval()
-        # loop over the validation set
-        for (x, y) in valDataLoader:
-            x = torch.unsqueeze(x,0)
-            x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
-
-            # break if end of dataset
-            if x.shape[-1] < BATCH_SIZE:
-                break
-
-            # send the input to the device
-            (x, y) = (x.to(device), y.to(device))
-            # make the predictions and calculate the validation loss
-            pred = model(x)
-            totalValLoss += lossFn(pred, y)
-            # calculate the number of correct predictions
-            valCorrect += (pred.argmax(1) == y.argmax(1)).type(
-                torch.float).sum().item()
-
-    # calculate the average training and validation loss
-    avgTrainLoss = totalTrainLoss / trainSteps
-    avgValLoss = totalValLoss / valSteps
-
-    # update our training history
-    H["train_loss"].append(avgTrainLoss.detach().numpy())
-    H["val_loss"].append(avgValLoss.detach().numpy())
-    # print the model training and validation information
-    print("[INFO] EPOCH: {}/{}".format(e + 1, EPOCHS))
-    print("Train loss: {:.6f}".format(
-        avgTrainLoss))
-    print("Val loss: {:.6f}".format(
-        avgValLoss))
+        print("Train loss: {:.6f}".format(
+            avgTrainLoss))
+        print("Val loss: {:.6f}".format(
+            avgValLoss))
 
     # finish measuring how long training took
     endTime = time.time()

@@ -190,23 +190,23 @@ if __name__ == "__main__":
         top_labels.append(labels)
         print(f"Peaks done and added to the dataset for record {key}")
 
-        if len(dataset) == 10:
+        if len(dataset) == 40:
             break
 
-    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:8]), (len(np.ravel(top_labels[:8])),1))).float()
-    X_train = torch.from_numpy(np.ravel(dataset[:8])).float()
+    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:38]), (len(np.ravel(top_labels[:38])),1))).float()
+    X_train = torch.from_numpy(np.ravel(dataset[:38])).float()
     trainData = Dataset(X_train, y_train)
 
-    X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
+    X_val, y_val = torch.from_numpy(np.ravel(dataset[38])).float(), torch.from_numpy(top_labels[38]).float()
     valData = Dataset(X_val, y_val)
 
-    X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(top_labels[9]).float()
+    X_test, y_test = torch.from_numpy(np.ravel(dataset[39])).float(), torch.from_numpy(top_labels[39]).float()
     testData = Dataset(X_test, y_test)
 
     # define training hyperparameters
     INIT_LR = 1e-2
     BATCH_SIZE = 384
-    EPOCHS = 1000
+    EPOCHS = 250
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

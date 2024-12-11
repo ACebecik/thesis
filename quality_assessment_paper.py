@@ -67,12 +67,11 @@ class NoiseDetector(nn.Module):
 
         #FC layer and softmax
         self.flatten1 = nn.Flatten()
-        self.fc1 = nn.Linear(in_features=1536, out_features=1)
-        #self.relu5 = nn.ReLU()
-    """
-            #self.flatten2 = nn.Flatten()
-            self.fc2 = nn.Linear(in_features=1024, out_features=2)
-            self.logSoftmax = nn.LogSoftmax()"""
+        self.fc1 = nn.Linear(in_features=1536, out_features=1024)
+        self.relu5 = nn.ReLU()
+
+        #self.flatten2 = nn.Flatten()
+        self.fc2 = nn.Linear(in_features=1024, out_features=1)
 
 
     def forward(self, x):
@@ -116,14 +115,14 @@ class NoiseDetector(nn.Module):
         #print('after flatten linear1 layer x.shape:', x.shape)
 
         x = self.fc1(x)
-        #x = self.relu5(x)
+        x = self.relu5(x)
 
         #print('before linear2 layer x.shape:', x.shape)
 
-        """        #x = self.flatten2(x)
-                x = self.fc2(x)
-                print('after linear2 layer x.shape:', x.shape)
-                #output = self.logSoftmax(x)"""
+        #x = self.flatten2(x)
+        x = self.fc2(x)
+        #print('after linear2 layer x.shape:', x.shape)
+        #output = self.logSoftmax(x)"""
         x = torch.unsqueeze(x, dim = 0)
         x = x.repeat(1,384,1)
 
@@ -137,7 +136,7 @@ if __name__ == "__main__":
 
     clean_signals = {}
     noisy_signals = {}
-    noise_perc = 0.4
+    noise_perc = 0.3
 
 
     name = ""
@@ -191,8 +190,12 @@ if __name__ == "__main__":
         top_labels.append(labels)
         print(f"Peaks done and added to the dataset for record {key}")
 
+        """        plt.plot(labels)
+                plt.show()"""
+
         if len(dataset) == 10:
             break
+
 
     y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:8]), (len(np.ravel(top_labels[:8])),1))).float()
     X_train = torch.from_numpy(np.ravel(dataset[:8])).float()

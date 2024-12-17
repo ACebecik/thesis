@@ -1,8 +1,3 @@
-"""
-This file implements the quality assessment paper:
-Noise Detection in Electrocardiography Signal for Robust Heart Rate Variability Analysis: A Deep Learning Approach
-by Ansari et al.
-"""
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -136,7 +131,7 @@ if __name__ == "__main__":
 
     clean_signals = {}
     noisy_signals = {}
-    noise_perc = 0.3
+    noise_perc = 0.2
 
 
     name = ""
@@ -156,9 +151,14 @@ if __name__ == "__main__":
 
     fs = 360 # sampling rate
     #window_size = 3 * fs
+
+
     window_size = 384
     dataset = []
     top_labels = []
+
+    training_data = []
+    target_labels = []
 
     # find if peaks match = usable, if not = unusable
     for key in clean_signals.keys():
@@ -168,61 +168,52 @@ if __name__ == "__main__":
         i = 0
         while i < record_length:
             if i + window_size >= record_length:
-                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:, 0], fs=360, verbose=False)
-                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:, 0], fs=360, verbose=False)
-                if set(rpeaks) == set(rpeaks_noisy):
-                    labels[i:] = 1
-                else:
-                    labels[i:] = 0
-
                 break
             else:
                 rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
                 rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
                 if set(rpeaks) == set(rpeaks_noisy):
-                    labels[i:i+window_size] = 1
+                    target_labels.append(1)
                 else:
-                    labels[i:i+window_size] = 0
-
+                    target_labels.append(0)
+            batched_train_data = noisy_signals[key][i:i+window_size, 0]
+            training_data.append(batched_train_data)
             i = i + window_size
 
-        dataset.append(noisy_signals[key][:,0])
-        top_labels.append(labels)
         print(f"Peaks done and added to the dataset for record {key}")
 
-        """        plt.plot(labels)
-                plt.show()"""
 
-        if len(dataset) == 10:
+
+        if key == '100':
             break
 
 
-    y_train = torch.from_numpy(np.reshape(np.ravel(top_labels[:8]), (len(np.ravel(top_labels[:8])),1))).float()
-    X_train = torch.from_numpy(np.ravel(dataset[:8])).float()
+    y_train = target_labels
+    X_train = training_data
     trainData = Dataset(X_train, y_train)
-
-    X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
-    valData = Dataset(X_val, y_val)
-
-    X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(top_labels[9]).float()
-    testData = Dataset(X_test, y_test)
+    """
+        X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
+        valData = Dataset(X_val, y_val)
+    
+        X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(top_labels[9]).float()
+        testData = Dataset(X_test, y_test)"""
 
     # define training hyperparameters
     INIT_LR = 1e-3
-    BATCH_SIZE = 384
+    BATCH_SIZE = 10
     EPOCHS = 100
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # initialize the train, validation, and test data loaders
-    trainDataLoader = DataLoader(trainData, shuffle=False,
+    trainDataLoader = DataLoader(trainData, shuffle=True,
                                  batch_size=BATCH_SIZE)
-    valDataLoader = DataLoader(valData, batch_size=BATCH_SIZE)
-    testDataLoader = DataLoader(testData, batch_size=BATCH_SIZE)
+    """    valDataLoader = DataLoader(valData, batch_size=BATCH_SIZE)
+        testDataLoader = DataLoader(testData, batch_size=BATCH_SIZE)"""
     # calculate steps per epoch for training and validation set
     trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
-    valSteps = len(valDataLoader.dataset) // BATCH_SIZE
+    #valSteps = len(valDataLoader.dataset) // BATCH_SIZE
 
     print("Initializing model...")
     model = NoiseDetector(in_channels=1).to(device)
@@ -292,95 +283,3 @@ if __name__ == "__main__":
             # and update the weights
             loss.backward()
             opt.step()
-
-
-        #EVAL
-        # switch off autograd for evaluation
-        with torch.no_grad():
-            # set the model in evaluation mode
-            model.eval()
-            # loop over the validation set
-            for (x, y) in valDataLoader:
-                x = torch.unsqueeze(x,0)
-                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
-
-                # break if end of dataset
-                if x.shape[-1] < BATCH_SIZE:
-                    break
-
-                # send the input to the device
-                (x, y) = (x.to(device), y.to(device))
-                # make the predictions and calculate the validation loss
-                pred = model(x)
-                pred = torch.unsqueeze(pred, dim=0)
-                pred = pred.repeat(1, 384, 1)
-                totalValLoss = totalValLoss + lossFn(pred, y) * BATCH_SIZE
-
-                predProbVal = getPreds(pred)
-                val_acc = val_acc + ((predProbVal>0.5)==y).sum()
-
-
-        # calculate the average training and validation loss
-        avgTrainLoss = totalTrainLoss / len(trainDataLoader.dataset)
-        avgValLoss = totalValLoss / len(valDataLoader.dataset)
-        avgTrainAcc = train_acc / len(trainDataLoader.dataset)
-        avgValAcc = val_acc / len(valDataLoader.dataset)
-
-        # update our training history
-        H["train_loss"].append(avgTrainLoss.detach().numpy())
-        H["val_loss"].append(avgValLoss.detach().numpy())
-        H["train_acc"].append(avgTrainAcc.detach().numpy())
-        H["val_acc"].append(avgValAcc.detach().numpy())
-
-
-        # print the model training and validation information
-        print("[INFO] EPOCH: {}/{}".format(e + 1, EPOCHS))
-        print("Train loss: {:.6f}".format(
-            avgTrainLoss))
-        print("Train acc: {:.6f}".format(
-            avgTrainAcc))
-        print("Val loss: {:.6f}".format(
-            avgValLoss))
-        print("Val acc: {:.6f}".format(
-            avgValAcc))
-
-    # finish measuring how long training took
-    endTime = time.time()
-    print("[INFO] total time taken to train the model: {:.2f}s".format(
-        endTime - startTime))
-
-
-    """    #TEST
-        # we can now evaluate the network on the test set
-        print("[INFO] evaluating network...")
-        # turn off autograd for testing evaluation
-        with torch.no_grad():
-            # set the model in evaluation mode
-            model.eval()
-    
-            # initialize a list to store our predictions
-            preds = []
-            # loop over the test set
-            for (x, y) in testDataLoader:
-                x = torch.unsqueeze(x,0)
-                x, y = torch.unsqueeze(x, 0), torch.unsqueeze(y, 0)
-    
-                # break if end of dataset
-                if x.shape[-1] < BATCH_SIZE:
-                    break
-    
-                # send the input to the device
-                x = x.to(device)
-                # make the predictions and add them to the list
-                pred = model(x)
-                preds.extend(pred.argmax(axis=1).cpu().numpy())
-        # generate a classification report
-        print(classification_report(testData.targets.cpu().numpy(),
-                                    np.array(preds), target_names=testData.classes))"""
-
-
-    # save the model to disk
-    model_pkl_file = "noise_detector_model.pkl"
-
-    with open(model_pkl_file, 'wb') as file:
-        pickle.dump(model, file)

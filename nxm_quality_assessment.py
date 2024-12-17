@@ -28,7 +28,7 @@ class Dataset(Dataset):
         return (x, y)
 
     def __len__(self):
-        count = self.x.shape[0]
+        count = len(self.x)
         return count
 
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     clean_signals = {}
     noisy_signals = {}
-    noise_perc = 0.2
+    noise_perc = 0.3
 
 
     name = ""
@@ -159,37 +159,55 @@ if __name__ == "__main__":
 
     training_data = []
     target_labels = []
-
-    # find if peaks match = usable, if not = unusable
-    for key in clean_signals.keys():
-
-        record_length = len(noisy_signals[key])
-        labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
-        i = 0
-        while i < record_length:
-            if i + window_size >= record_length:
-                break
-            else:
-                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
-                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
-                if set(rpeaks) == set(rpeaks_noisy):
-                    target_labels.append(1)
+    """
+        # find if peaks match = usable, if not = unusable
+        for key in clean_signals.keys():
+    
+            record_length = len(noisy_signals[key])
+            labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
+            i = 0
+            while i < record_length:
+                if i + window_size >= record_length:
+                    break
                 else:
-                    target_labels.append(0)
-            batched_train_data = noisy_signals[key][i:i+window_size, 0]
-            training_data.append(batched_train_data)
-            i = i + window_size
+                    rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                    rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                    if set(rpeaks) == set(rpeaks_noisy):
+                        target_labels.append(1)
+                    else:
+                        target_labels.append(0)
+                batched_train_data = noisy_signals[key][i:i+window_size, 0]
+                training_data.append(batched_train_data)
+                i = i + window_size
+    
+            print(f"Peaks done and added to the dataset for record {key}")
+    
+    """
 
-        print(f"Peaks done and added to the dataset for record {key}")
+    #find if peaks match = usable, if not = unusable
+    key = '100'
 
-
-
-        if key == '100':
+    record_length = len(noisy_signals[key])
+    labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
+    i = 0
+    while i < record_length:
+        if i + window_size >= record_length:
             break
+        else:
+            rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i + window_size, 0], fs=360, verbose=False)
+            rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i + window_size, 0], fs=360, verbose=False)
+            if set(rpeaks) == set(rpeaks_noisy):
+                target_labels.append(1)
+            else:
+                target_labels.append(0)
+        batched_train_data = noisy_signals[key][i:i + window_size, 0]
+        training_data.append(batched_train_data)
+        i = i + window_size
 
+    print(f"Peaks done and added to the dataset for record {key}")
 
-    y_train = target_labels
-    X_train = training_data
+    y_train = torch.Tensor(target_labels)
+    X_train = torch.Tensor(training_data)
     trainData = Dataset(X_train, y_train)
     """
         X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
@@ -247,8 +265,8 @@ if __name__ == "__main__":
 
 
         # loop over the training set
-        for (x, y) in trainDataLoader:
-            x = torch.unsqueeze(x,0)
+        for (x, y) in zip(X_train, y_train):
+            x,y = torch.unsqueeze(x,0),torch.unsqueeze(y,0)
             x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
 
             # break if end of dataset
@@ -263,8 +281,6 @@ if __name__ == "__main__":
             # perform a forward pass and calculate the training loss
             pred = model(x)
 
-            pred = torch.unsqueeze(pred, dim=0)
-            pred = pred.repeat(1, 384, 1)
 
             #print(pred.shape, y.shape)
             loss = lossFn(pred, y)
@@ -273,13 +289,17 @@ if __name__ == "__main__":
             getPreds = nn.Sigmoid()
             predProb = getPreds(pred)
 
-            train_acc = train_acc +  ((predProb>0.5) ==y).sum() # correctly predicted samples
+            train_acc = train_acc +  ((predProb>0.5) ==y) # correctly predicted samples
 
             # add the loss to the total training loss so far and
             # calculate the number of correct predictions
-            totalTrainLoss = totalTrainLoss + loss * BATCH_SIZE
+            totalTrainLoss = totalTrainLoss + loss
+
+
 
             # zero out the gradients, perform the backpropagation step,
             # and update the weights
             loss.backward()
             opt.step()
+
+        print(f"Epoch: {e+1}, Total training loss: {totalTrainLoss}")

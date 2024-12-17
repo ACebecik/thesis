@@ -14,6 +14,7 @@ from torch.utils.data import Dataset
 from sklearn.metrics import classification_report
 import argparse
 import pickle
+from sklearn.model_selection import train_test_split
 
 
 
@@ -206,31 +207,29 @@ if __name__ == "__main__":
 
     print(f"Peaks done and added to the dataset for record {key}")
 
-    y_train = torch.Tensor(target_labels)
-    X_train = torch.Tensor(training_data)
-    trainData = Dataset(X_train, y_train)
-    """
-        X_val, y_val = torch.from_numpy(np.ravel(dataset[8])).float(), torch.from_numpy(top_labels[8]).float()
-        valData = Dataset(X_val, y_val)
-    
-        X_test, y_test = torch.from_numpy(np.ravel(dataset[9])).float(), torch.from_numpy(top_labels[9]).float()
-        testData = Dataset(X_test, y_test)"""
+    y = torch.Tensor(target_labels)
+    X = torch.Tensor(training_data)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=31)
+
+    #trainData = Dataset(X_train, y_train)
+
+
 
     # define training hyperparameters
     INIT_LR = 1e-3
     BATCH_SIZE = 10
-    EPOCHS = 100
+    EPOCHS = 30
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # initialize the train, validation, and test data loaders
-    trainDataLoader = DataLoader(trainData, shuffle=True,
-                                 batch_size=BATCH_SIZE)
+    #trainDataLoader = DataLoader(trainData, shuffle=True,batch_size=BATCH_SIZE)
     """    valDataLoader = DataLoader(valData, batch_size=BATCH_SIZE)
         testDataLoader = DataLoader(testData, batch_size=BATCH_SIZE)"""
     # calculate steps per epoch for training and validation set
-    trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
+    #trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
     #valSteps = len(valDataLoader.dataset) // BATCH_SIZE
 
     print("Initializing model...")
@@ -248,6 +247,9 @@ if __name__ == "__main__":
 
     results_train_acc = []
     results_train_loss = []
+    results_val_acc = []
+    results_val_loss = []
+
 
 
     # measure how long training is going to take
@@ -255,9 +257,10 @@ if __name__ == "__main__":
     startTime = time.time()
 
 
-    # TRAINING
     # loop over epochs
     for e in tqdm(range(0, EPOCHS)):
+
+        # TRAINING
         # train the model
         model.train()
 
@@ -307,13 +310,57 @@ if __name__ == "__main__":
 
         avgTrainAcc = float(train_acc/len(y_train))
         avgTrainLoss = float(totalTrainLoss /len(y_train))
-        print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, totalTrainLoss, avgTrainAcc))
+        print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, avgTrainLoss, avgTrainAcc))
 
         # update our training history
         results_train_acc.append(avgTrainAcc)
         results_train_loss.append(avgTrainLoss)
 
+
+        #EVAL
+        # switch off autograd for evaluation
+        with torch.no_grad():
+            # set the model in evaluation mode
+            model.eval()
+            # loop over the validation set
+            for (x, y) in zip(X_test, y_test):
+                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+
+                # break if end of dataset
+                if x.shape[-1] < BATCH_SIZE:
+                    break
+
+                # send the input to the device
+                (x, y) = (x.to(device), y.to(device))
+
+                # make the predictions and calculate the validation loss
+                pred = model(x)
+                lossVal = lossFn(pred, y)
+
+                predProbVal = getPreds(pred)
+
+                totalValLoss = totalValLoss + lossVal
+
+                val_acc = val_acc + ((predProbVal>0.5)==y)
+
+        avgValAcc = float(val_acc/len(y_test))
+        avgValLoss = float(totalValLoss /len(y_test))
+        print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
+
+        # update our training history
+        results_val_acc.append(avgValAcc)
+        results_val_loss.append(avgValLoss)
+
+    # finish measuring how long training took
+    endTime = time.time()
+    print("[INFO] total time taken to train the model: {:.2f}s".format(
+        endTime - startTime))
+
     plt.plot(results_train_acc, label='Train Acc')
     plt.plot(results_train_loss, label='Train Loss')
+    plt.plot(results_val_acc, label='Val Acc')
+    plt.plot(results_val_loss, label='Val Loss')
+
     plt.legend()
     plt.show()

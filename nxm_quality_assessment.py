@@ -246,6 +246,10 @@ if __name__ == "__main__":
         "val_acc": []
     }
 
+    results_train_acc = []
+    results_train_loss = []
+
+
     # measure how long training is going to take
     print("[INFO] training the network...")
     startTime = time.time()
@@ -296,10 +300,20 @@ if __name__ == "__main__":
             totalTrainLoss = totalTrainLoss + loss
 
 
-
             # zero out the gradients, perform the backpropagation step,
             # and update the weights
             loss.backward()
             opt.step()
 
-        print(f"Epoch: {e+1}, Total training loss: {totalTrainLoss}")
+        avgTrainAcc = float(train_acc/len(y_train))
+        avgTrainLoss = float(totalTrainLoss /len(y_train))
+        print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, totalTrainLoss, avgTrainAcc))
+
+        # update our training history
+        results_train_acc.append(avgTrainAcc)
+        results_train_loss.append(avgTrainLoss)
+
+    plt.plot(results_train_acc, label='Train Acc')
+    plt.plot(results_train_loss, label='Train Loss')
+    plt.legend()
+    plt.show()

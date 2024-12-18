@@ -160,52 +160,57 @@ if __name__ == "__main__":
 
     training_data = []
     target_labels = []
-    """
-        # find if peaks match = usable, if not = unusable
-        for key in clean_signals.keys():
-    
-            record_length = len(noisy_signals[key])
-            labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
-            i = 0
-            while i < record_length:
-                if i + window_size >= record_length:
-                    break
-                else:
-                    rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
-                    rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
-                    if set(rpeaks) == set(rpeaks_noisy):
-                        target_labels.append(1)
-                    else:
-                        target_labels.append(0)
-                batched_train_data = noisy_signals[key][i:i+window_size, 0]
-                training_data.append(batched_train_data)
-                i = i + window_size
-    
-            print(f"Peaks done and added to the dataset for record {key}")
-    
-    """
 
-    #find if peaks match = usable, if not = unusable
-    key = '100'
+    # find if peaks match = usable, if not = unusable
+    for key in clean_signals.keys():
 
-    record_length = len(noisy_signals[key])
-    labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
-    i = 0
-    while i < record_length:
-        if i + window_size >= record_length:
-            break
-        else:
-            rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i + window_size, 0], fs=360, verbose=False)
-            rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i + window_size, 0], fs=360, verbose=False)
-            if set(rpeaks) == set(rpeaks_noisy):
-                target_labels.append(1)
+        record_length = len(noisy_signals[key])
+        labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
+        i = 0
+        while i < record_length:
+            if i + window_size >= record_length:
+                break
             else:
-                target_labels.append(0)
-        batched_train_data = noisy_signals[key][i:i + window_size, 0]
-        training_data.append(batched_train_data)
-        i = i + window_size
+                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                if set(rpeaks) == set(rpeaks_noisy):
+                    target_labels.append(1)
+                else:
+                    target_labels.append(0)
+            batched_train_data = noisy_signals[key][i:i+window_size, 0]
+            training_data.append(batched_train_data)
+            i = i + window_size
 
-    print(f"Peaks done and added to the dataset for record {key}")
+        print(f"Peaks done and added to the dataset for record {key}")
+
+        if key == '124':
+            break
+
+
+
+    """#find if peaks match = usable, if not = unusable
+        key = '100'
+    
+        record_length = len(noisy_signals[key])
+        labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
+        i = 0
+        while i < record_length:
+            if i + window_size >= record_length:
+                break
+            else:
+                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i + window_size, 0], fs=360, verbose=False)
+                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i + window_size, 0], fs=360, verbose=False)
+                if set(rpeaks) == set(rpeaks_noisy):
+                    target_labels.append(1)
+                else:
+                    target_labels.append(0)
+            batched_train_data = noisy_signals[key][i:i + window_size, 0]
+            training_data.append(batched_train_data)
+            i = i + window_size
+    
+        print(f"Peaks done and added to the dataset for record {key}")"""
+
+
 
     y = torch.Tensor(target_labels)
     X = torch.Tensor(training_data)
@@ -219,7 +224,7 @@ if __name__ == "__main__":
     # define training hyperparameters
     INIT_LR = 1e-3
     BATCH_SIZE = 10
-    EPOCHS = 30
+    EPOCHS = 50
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -357,10 +362,20 @@ if __name__ == "__main__":
     print("[INFO] total time taken to train the model: {:.2f}s".format(
         endTime - startTime))
 
-    plt.plot(results_train_acc, label='Train Acc')
-    plt.plot(results_train_loss, label='Train Loss')
-    plt.plot(results_val_acc, label='Val Acc')
-    plt.plot(results_val_loss, label='Val Loss')
 
+    fig = plt.figure()
+
+    plt.subplot(2,1,1)
+    plt.plot(results_train_acc, label='Train Acc')
+    plt.plot(results_val_acc, label='Val Acc')
+    plt.title('Accuracy')
     plt.legend()
-    plt.show()
+
+    plt.subplot(2,1,2)
+    plt.plot(results_train_loss, label='Train Loss')
+    plt.plot(results_val_loss, label='Val Loss')
+    plt.xlabel('Epochs')
+    plt.title('Loss')
+    plt.legend()
+
+    plt.savefig('plot with 25 records.png')

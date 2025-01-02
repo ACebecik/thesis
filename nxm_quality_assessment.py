@@ -15,6 +15,8 @@ from sklearn.metrics import classification_report
 import argparse
 import pickle
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
 
 
 
@@ -143,6 +145,12 @@ if __name__ == "__main__":
         if len(name) == 3:
             clean_signals[name] = wfdb.rdrecord(f"/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/{name}").p_signal
             noisy_signals[name] = clean_signals[name]*(1-noise_perc)  + noise_em*noise_perc
+
+            # standardise the noisy signal s.t. mean 0 and std 1
+            scaler = StandardScaler()
+            scaler = scaler.fit(noisy_signals[name])
+            noisy_signals[name] = scaler.transform(noisy_signals[name])
+
             name=""
     print(clean_signals.keys())
 
@@ -183,7 +191,7 @@ if __name__ == "__main__":
 
         print(f"Peaks done and added to the dataset for record {key}")
 
-        if key == '124':
+        if key == '101':
             break
 
 
@@ -378,4 +386,4 @@ if __name__ == "__main__":
     plt.title('Loss')
     plt.legend()
 
-    plt.savefig('plot with 25 records.png')
+    plt.savefig('scaled_plot with 2 records.png')

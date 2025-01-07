@@ -8,6 +8,8 @@ import wfdb
 import wfdb.processing
 import scipy
 import time
+import math
+import torchvision
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.utils.data import Dataset
@@ -15,17 +17,20 @@ from sklearn.metrics import classification_report
 import argparse
 import pickle
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 
 
 class Dataset(Dataset):
     def __init__(self, x, y):
+        # data loading
+
         self.x = x
         self.y = y
 
     def __getitem__(self, index):
+        # allows for indexing
         x = torch.Tensor(self.x[index])
         y = torch.Tensor(self.y[index])
         return (x, y)
@@ -43,25 +48,25 @@ class NoiseDetector(nn.Module):
         self.conv1 = nn.Conv1d(in_channels=in_channels, out_channels=32, kernel_size=7, stride=1, padding=3)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.drop1 = nn.Dropout(p=0.1)
+        self.drop1 = nn.Dropout(p=0.3)
 
         # 2nd
         self.conv2 = nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7, stride=1, padding=3)
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.drop2 = nn.Dropout(p=0.1)
+        self.drop2 = nn.Dropout(p=0.3)
 
         #3rd
         self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=7, stride=1, padding=3)
         self.relu3 = nn.ReLU()
         self.pool3 = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.drop3 = nn.Dropout(p=0.1)
+        self.drop3 = nn.Dropout(p=0.3)
 
         #4th
         self.conv4 = nn.Conv1d(in_channels=64, out_channels=64, kernel_size=7, stride=1, padding=3)
         self.relu4 = nn.ReLU()
         self.pool4 = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.drop4 = nn.Dropout(p=0.1)
+        self.drop4 = nn.Dropout(p=0.3)
 
         #FC layer and softmax
         self.flatten1 = nn.Flatten()
@@ -134,7 +139,11 @@ if __name__ == "__main__":
 
     clean_signals = {}
     noisy_signals = {}
-    noise_perc = 0.3
+    noise_perc = 0.25
+
+    # Noise Preparation
+
+
 
 
     name = ""
@@ -145,11 +154,6 @@ if __name__ == "__main__":
         if len(name) == 3:
             clean_signals[name] = wfdb.rdrecord(f"/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/{name}").p_signal
             noisy_signals[name] = clean_signals[name]*(1-noise_perc)  + noise_em*noise_perc
-
-            # standardise the noisy signal s.t. mean 0 and std 1
-            scaler = StandardScaler()
-            scaler = scaler.fit(noisy_signals[name])
-            noisy_signals[name] = scaler.transform(noisy_signals[name])
 
             name=""
     print(clean_signals.keys())
@@ -190,6 +194,7 @@ if __name__ == "__main__":
             i = i + window_size
 
         print(f"Peaks done and added to the dataset for record {key}")
+        print(f"Class distribution of the record: {sum(target_labels)/len(target_labels)}")
 
         if key == '101':
             break
@@ -232,7 +237,7 @@ if __name__ == "__main__":
     # define training hyperparameters
     INIT_LR = 1e-3
     BATCH_SIZE = 10
-    EPOCHS = 50
+    EPOCHS = 100
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -386,4 +391,4 @@ if __name__ == "__main__":
     plt.title('Loss')
     plt.legend()
 
-    plt.savefig('scaled_plot with 2 records.png')
+    plt.savefig('temp 2 datasets.png')

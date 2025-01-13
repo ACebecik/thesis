@@ -22,22 +22,20 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 
-class Dataset(Dataset):
+class CustomDataset(Dataset):
     def __init__(self, x, y):
         # data loading
-
         self.x = x
         self.y = y
 
     def __getitem__(self, index):
         # allows for indexing
-        x = torch.Tensor(self.x[index])
-        y = torch.Tensor(self.y[index])
-        return (x, y)
+        get_x = self.x[index]
+        get_y = self.y[index]
+        return get_x,get_y
 
     def __len__(self):
-        count = len(self.x)
-        return count
+        return len(self.x)
 
 
 class NoiseDetector(nn.Module):
@@ -70,7 +68,7 @@ class NoiseDetector(nn.Module):
 
         #FC layer and softmax
         self.flatten1 = nn.Flatten()
-        self.fc1 = nn.Linear(in_features=1536, out_features=1024)
+        self.fc1 = nn.Linear(in_features=1408, out_features=1024)
         self.relu5 = nn.ReLU()
 
         #self.flatten2 = nn.Flatten()
@@ -134,14 +132,15 @@ class NoiseDetector(nn.Module):
 
 if __name__ == "__main__":
 
-    records_file = open("/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/RECORDS")
-    noise_em = wfdb.rdrecord("/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-noise-stress-test-database-1.0.0/em").p_signal
+    records_file = open("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/RECORDS")
+    noise_em = wfdb.rdrecord("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/nstdb/1.0.0/em").p_signal
 
     clean_signals = {}
     noisy_signals = {}
-    noise_perc = 0.25
+    noise_perc = 0.3
 
     # Noise Preparation
+
 
 
 
@@ -152,7 +151,7 @@ if __name__ == "__main__":
             continue
         name = name+char
         if len(name) == 3:
-            clean_signals[name] = wfdb.rdrecord(f"/Users/alperencebecik/Desktop/Thesis Masterfile/data/mit-bih-arrhythmia-database-1.0.0/{name}").p_signal
+            clean_signals[name] = wfdb.rdrecord(f"/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/{name}").p_signal
             noisy_signals[name] = clean_signals[name]*(1-noise_perc)  + noise_em*noise_perc
 
             name=""
@@ -166,7 +165,7 @@ if __name__ == "__main__":
     #window_size = 3 * fs
 
 
-    window_size = 384
+    WINDOW_SIZE = 1*fs
     dataset = []
     top_labels = []
 
@@ -180,49 +179,33 @@ if __name__ == "__main__":
         labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
         i = 0
         while i < record_length:
-            if i + window_size >= record_length:
+            if i + WINDOW_SIZE >= record_length:
                 break
             else:
-                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i+window_size, 0], fs=360, verbose=False)
-                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i+window_size, 0], fs=360, verbose=False)
+                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i + WINDOW_SIZE, 0], fs=360, verbose=False)
+                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i + WINDOW_SIZE, 0], fs=360, verbose=False)
                 if set(rpeaks) == set(rpeaks_noisy):
                     target_labels.append(1)
                 else:
                     target_labels.append(0)
-            batched_train_data = noisy_signals[key][i:i+window_size, 0]
+            batched_train_data = noisy_signals[key][i:i + WINDOW_SIZE, 0]
             training_data.append(batched_train_data)
-            i = i + window_size
+            i = i + WINDOW_SIZE
 
         print(f"Peaks done and added to the dataset for record {key}")
         print(f"Class distribution of the record: {sum(target_labels)/len(target_labels)}")
 
-        if key == '101':
-            break
+        """if key == "100":
+                break """
 
 
+    # define training hyperparameters
+    INIT_LR = 1e-4
+    BATCH_SIZE = 32
+    EPOCHS = 60
 
-    """#find if peaks match = usable, if not = unusable
-        key = '100'
-    
-        record_length = len(noisy_signals[key])
-        labels = np.zeros((record_length, 1))  # 0: not usable class , 1: usable ecg class
-        i = 0
-        while i < record_length:
-            if i + window_size >= record_length:
-                break
-            else:
-                rpeaks = wfdb.processing.xqrs_detect(clean_signals[key][i:i + window_size, 0], fs=360, verbose=False)
-                rpeaks_noisy = wfdb.processing.xqrs_detect(noisy_signals[key][i:i + window_size, 0], fs=360, verbose=False)
-                if set(rpeaks) == set(rpeaks_noisy):
-                    target_labels.append(1)
-                else:
-                    target_labels.append(0)
-            batched_train_data = noisy_signals[key][i:i + window_size, 0]
-            training_data.append(batched_train_data)
-            i = i + window_size
-    
-        print(f"Peaks done and added to the dataset for record {key}")"""
-
+    # set the device we will be using to train the model
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
     y = torch.Tensor(target_labels)
@@ -230,25 +213,15 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=31)
 
-    #trainData = Dataset(X_train, y_train)
-
-
-
-    # define training hyperparameters
-    INIT_LR = 1e-3
-    BATCH_SIZE = 10
-    EPOCHS = 100
-
-    # set the device we will be using to train the model
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    trainData = CustomDataset(X_train, y_train)
+    testData = CustomDataset(X_test, y_test)
 
     # initialize the train, validation, and test data loaders
-    #trainDataLoader = DataLoader(trainData, shuffle=True,batch_size=BATCH_SIZE)
-    """    valDataLoader = DataLoader(valData, batch_size=BATCH_SIZE)
-        testDataLoader = DataLoader(testData, batch_size=BATCH_SIZE)"""
+    trainDataLoader = DataLoader(trainData, shuffle=True,batch_size=BATCH_SIZE)
+    testDataLoader = DataLoader(testData, shuffle=True, batch_size=BATCH_SIZE)
     # calculate steps per epoch for training and validation set
-    #trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
-    #valSteps = len(valDataLoader.dataset) // BATCH_SIZE
+    trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
+    testSteps = len(testDataLoader.dataset) // BATCH_SIZE
 
     print("Initializing model...")
     model = NoiseDetector(in_channels=1).to(device)
@@ -289,32 +262,27 @@ if __name__ == "__main__":
         val_acc = 0
 
 
-        # loop over the training set
-        for (x, y) in zip(X_train, y_train):
-            x,y = torch.unsqueeze(x,0),torch.unsqueeze(y,0)
-            x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+        # loop over the training set in batches
+        for X_batch, y_batch in trainDataLoader:
+            X_batch,y_batch = torch.unsqueeze(X_batch,1),torch.unsqueeze(y_batch,1)
+            #X_batch,y_batch = torch.unsqueeze(X_batch,0), torch.unsqueeze(y_batch,0)
 
-            # break if end of dataset
-            if x.shape[-1] < BATCH_SIZE:
-                break
+            """            # break if end of dataset
+                        if X_batch.shape[-1] < BATCH_SIZE:
+                            break"""
 
             # send the input to the device
-            (x, y) = (x.to(device), y.to(device))
+            (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
 
             opt.zero_grad()
-
             # perform a forward pass and calculate the training loss
-            pred = model(x)
-
-
+            pred = model(X_batch)
             #print(pred.shape, y.shape)
-            loss = lossFn(pred, y)
-
-
+            loss = lossFn(pred, y_batch)
             getPreds = nn.Sigmoid()
             predProb = getPreds(pred)
 
-            train_acc = train_acc +  ((predProb>0.5) ==y) # correctly predicted samples
+            train_acc = train_acc +  ((predProb>0.5) ==y_batch).sum() # correctly predicted samples
 
             # add the loss to the total training loss so far and
             # calculate the number of correct predictions
@@ -327,7 +295,7 @@ if __name__ == "__main__":
             opt.step()
 
         avgTrainAcc = float(train_acc/len(y_train))
-        avgTrainLoss = float(totalTrainLoss /len(y_train))
+        avgTrainLoss = float(totalTrainLoss /trainSteps)
         print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, avgTrainLoss, avgTrainAcc))
 
         # update our training history
@@ -341,29 +309,28 @@ if __name__ == "__main__":
             # set the model in evaluation mode
             model.eval()
             # loop over the validation set
-            for (x, y) in zip(X_test, y_test):
-                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
-                x,y  = torch.unsqueeze(x,0), torch.unsqueeze(y,0)
+            for X_batch, y_batch in testDataLoader:
+                X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
 
-                # break if end of dataset
-                if x.shape[-1] < BATCH_SIZE:
-                    break
+                """                # break if end of dataset
+                                if x.shape[-1] < BATCH_SIZE:
+                                    break"""
 
                 # send the input to the device
-                (x, y) = (x.to(device), y.to(device))
+                (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
 
                 # make the predictions and calculate the validation loss
-                pred = model(x)
-                lossVal = lossFn(pred, y)
+                pred = model(X_batch)
+                lossVal = lossFn(pred, y_batch)
 
                 predProbVal = getPreds(pred)
 
                 totalValLoss = totalValLoss + lossVal
 
-                val_acc = val_acc + ((predProbVal>0.5)==y)
+                val_acc = val_acc + ((predProbVal>0.5)==y_batch).sum()
 
         avgValAcc = float(val_acc/len(y_test))
-        avgValLoss = float(totalValLoss /len(y_test))
+        avgValLoss = float(totalValLoss /testSteps)
         print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
 
         # update our training history
@@ -376,19 +343,20 @@ if __name__ == "__main__":
         endTime - startTime))
 
 
-    fig = plt.figure()
-
-    plt.subplot(2,1,1)
     plt.plot(results_train_acc, label='Train Acc')
     plt.plot(results_val_acc, label='Val Acc')
     plt.title('Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel("Accuracy")
     plt.legend()
+    plt.savefig("mit_all_Acc_Plot 1 window")
+    plt.clf()
 
-    plt.subplot(2,1,2)
     plt.plot(results_train_loss, label='Train Loss')
     plt.plot(results_val_loss, label='Val Loss')
     plt.xlabel('Epochs')
+    plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
 
-    plt.savefig('temp 2 datasets.png')
+    plt.savefig('mit_all_Loss_Plot 1 window.png')

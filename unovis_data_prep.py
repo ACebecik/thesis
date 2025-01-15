@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import wfdb
 import wfdb.processing
-import matplotlib
 import numpy as np
 
 

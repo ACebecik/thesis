@@ -4,6 +4,7 @@ import wfdb.processing
 import numpy as np
 from scipy.signal import butter, lfilter
 from sklearn.preprocessing import MinMaxScaler
+import torch
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     return butter(order, [lowcut, highcut], fs=fs, btype='band')
@@ -22,7 +23,7 @@ cecg3 = np.zeros(1)
 cecg4 = np.zeros(1)
 
 data_to_use = {} 
-labels_to_use =[] 
+labels_to_use ={} 
 
 """
 Unovis psignal keys:
@@ -125,25 +126,45 @@ for record_no in range (51, 53):
     cd =[cd1, cd2, cd3, cd4]
     print(f" Class Distributions of Channels:{cd}")
     selected_channel = np.argmax(cd)
-    print (f"Selected Channel:{selected_channel}")
+    print (f"Selected Channel:{selected_channel + 1}")
     
+    cecg1_labels = np.array(cecg1_labels)
+    cecg2_labels = np.array(cecg2_labels)
+    cecg3_labels = np.array(cecg3_labels)
+    cecg4_labels = np.array(cecg4_labels)
+
     if selected_channel == 0:
         data_to_use[record_no] = cecg1
-        labels_to_use.append(cecg1_labels)
+        labels_to_use[record_no] = cecg1_labels
 
     elif selected_channel == 1:
         data_to_use[record_no] = cecg2
-        labels_to_use.append(cecg2_labels)
+        labels_to_use[record_no] = cecg2_labels
 
     elif selected_channel == 2:
         data_to_use[record_no] = cecg3
-        labels_to_use.append(cecg3_labels)
+        labels_to_use[record_no] = cecg3_labels
 
     else:
         data_to_use[record_no] = cecg4
-        labels_to_use.append(cecg4_labels)
+        labels_to_use[record_no] = cecg4_labels
 
+X_total=[]
+y_total=np.array([0])
 
+for key in data_to_use.keys():
+    i = 0
+    while i + WINDOW_SIZE < data_to_use[key].shape[-1]:
+        X_total.append(data_to_use[key][i:i + WINDOW_SIZE])
+
+        i = i + WINDOW_SIZE
+    y_total = np.concatenate((y_total, labels_to_use[key])) 
+
+y_total = np.delete(y_total,[0])
+X_tensor = torch.Tensor(X_total)
+y_tensor = torch.Tensor(y_total)
+
+print(X_tensor.shape, y_tensor.shape, X_tensor.shape == y_tensor.shape)
 
 
 

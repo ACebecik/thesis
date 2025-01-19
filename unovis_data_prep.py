@@ -21,8 +21,9 @@ Unovis psignal keys:
 6 = cecg3
 7 = cecg4
 """
+# read the data from the records
 
-for i in range (51, 53):
+for i in range (51, 200):
     if i == 194:
         continue
     str_i = str(i)
@@ -35,9 +36,54 @@ for i in range (51, 53):
 
 print(refecg.shape, cecg1.shape, cecg2.shape, cecg3.shape, cecg4.shape)
 
-"""plt.plot(cecg1, label = "cecg1")
-plt.plot(refecg, label = "refecg")
-plt.legend()
-plt.savefig("plots/temp-unovis")"""
+# create segments, find peaks and classify
+fs = 360
+i = 0
+WINDOW_SIZE = 1*fs
+
+cecg1_labels =[]
+cecg2_labels =[]
+cecg3_labels =[]
+cecg4_labels =[]    
+
+while i+WINDOW_SIZE < cecg1.shape[-1]:
+
+    ref_peaks = wfdb.processing.xqrs_detect(refecg[i:i + WINDOW_SIZE], fs=360, verbose=False)
+
+    cecg1_peaks = wfdb.processing.xqrs_detect(cecg1[i:i + WINDOW_SIZE], fs=360, verbose=False)
+
+    if set(ref_peaks) == set(cecg1_peaks):
+        cecg1_labels.append(1)
+    else:
+        cecg1_labels.append(0)
+    
+    cecg2_peaks = wfdb.processing.xqrs_detect(cecg2[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    
+    if set(ref_peaks) == set(cecg2_peaks):
+        cecg2_labels.append(1)
+    else:
+        cecg2_labels.append(0)
+
+    cecg3_peaks = wfdb.processing.xqrs_detect(cecg3[i:i + WINDOW_SIZE], fs=360, verbose=False)
+   
+    if set(ref_peaks) == set(cecg3_peaks):
+        cecg3_labels.append(1)
+    else:
+        cecg3_labels.append(0)
+
+    cecg4_peaks = wfdb.processing.xqrs_detect(cecg4[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    
+    if set(ref_peaks) == set(cecg4_peaks):
+        cecg4_labels.append(1)
+    else:
+        cecg4_labels.append(0)
+
+    i = i + WINDOW_SIZE
+
+print(f"Class distribution of the cecg1: {sum(cecg1_labels)/len(cecg1_labels)}")
+print(f"Class distribution of the cecg1: {sum(cecg2_labels)/len(cecg2_labels)}")
+print(f"Class distribution of the cecg1: {sum(cecg3_labels)/len(cecg3_labels)}")
+print(f"Class distribution of the cecg1: {sum(cecg4_labels)/len(cecg4_labels)}")
+
 
 

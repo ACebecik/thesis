@@ -18,7 +18,7 @@ import argparse
 import pickle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 
 
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     # define training hyperparameters
     INIT_LR = 1e-4
     BATCH_SIZE = 32
-    EPOCHS = 60
+    EPOCHS = 2
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -250,6 +250,7 @@ if __name__ == "__main__":
     results_val_acc = []
     results_val_loss = []
 
+    conf_matrices_every_epoch =[] 
 
 
     # measure how long training is going to take
@@ -317,6 +318,10 @@ if __name__ == "__main__":
         with torch.no_grad():
             # set the model in evaluation mode
             model.eval()
+
+            # clear confusion matrix
+            conf_matrix =np.zeros((2,2)) 
+ 
             # loop over the validation set
             for X_batch, y_batch in testDataLoader:
                 X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
@@ -338,6 +343,11 @@ if __name__ == "__main__":
 
                 val_acc = val_acc + ((predProbVal>0.5)==y_batch).sum()
 
+               # confusion matrix 
+                predictions = (predProbVal>0.5)*1
+                temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
+                conf_matrix = np.add(conf_matrix, temp_conf_matrix)
+
         avgValAcc = float(val_acc/len(y_test))
         avgValLoss = float(totalValLoss /testSteps)
         print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
@@ -345,6 +355,7 @@ if __name__ == "__main__":
         # update our training history
         results_val_acc.append(avgValAcc)
         results_val_loss.append(avgValLoss)
+        conf_matrices_every_epoch.append(conf_matrix)
 
     # finish measuring how long training took
     endTime = time.time()
@@ -352,13 +363,13 @@ if __name__ == "__main__":
         endTime - startTime))
 
 
-    plt.plot(results_train_acc, label='Train Acc')
+    """    plt.plot(results_train_acc, label='Train Acc')
     plt.plot(results_val_acc, label='Val Acc')
     plt.title('Accuracy')
     plt.xlabel('Epochs')
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig("unovis_all_Acc_Plot_w120")
+    plt.savefig("plots/conf_matrix_temp")
     plt.clf()
 
     plt.plot(results_train_loss, label='Train Loss')
@@ -367,5 +378,11 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
+    plt.savefig('plots/conf_matrix_temp')
+    plt.clf()"""
 
-    plt.savefig('unovis_all_Loss_Plot_w120.png')
+   #display confusion matrix for the best accuracy epoch
+    best_epoch = np.argmax(results_val_acc)
+    disp_conf_matrix = ConfusionMatrixDisplay(conf_matrices_every_epoch[best_epoch])
+    disp_conf_matrix.plot()
+    plt.savefig("plots/conf_matrix_temp")

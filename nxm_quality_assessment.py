@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
     records_file.close()
 
-    # window size is 3 seconds of measurement to indicate clean / noisy fragment
+    # window size is 1 seconds of measurement to indicate clean / noisy fragment
 
     fs = 360 # sampling rate
     #window_size = 3 * fs
@@ -210,6 +210,14 @@ if __name__ == "__main__":
 
     y = torch.Tensor(target_labels)
     X = torch.Tensor(training_data)
+
+   #save peaks for future 
+    torch.save(X, "tensors/mit_all_records_X_w360.pt")
+    torch.save(y, "tensors/mit_all_records_y_w360.pt")
+
+    a = 
+    
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=31)
 

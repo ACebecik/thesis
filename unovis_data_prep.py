@@ -5,11 +5,11 @@ import numpy as np
 
 
 unovis_data = {}
-refecg = []
-cecg1 = []
-cecg2 = []
-cecg3 = []
-cecg4 = []
+refecg = np.zeros(1)
+cecg1 = np.zeros(1)
+cecg2 = np.zeros(1)
+cecg3 = np.zeros(1)
+cecg4 = np.zeros(1)
 
 
 """
@@ -22,28 +22,22 @@ Unovis psignal keys:
 7 = cecg4
 """
 
-for i in range (51, 52):
+for i in range (51, 53):
     if i == 194:
         continue
     str_i = str(i)
-    unovis_data[i] = wfdb.rdrecord(f"/Users/alperencebecik/Desktop/Thesis Masterfile/data/UnoViS_BigD_{str_i}/UnoViS_BigD_{str_i}")
-    refecg.append(unovis_data[i].p_signal[:,0])
-    cecg1.append(unovis_data[i].p_signal[:,4])
-    cecg2.append(unovis_data[i].p_signal[:,5])
-    cecg3.append(unovis_data[i].p_signal[:,6])
-    cecg4.append(unovis_data[i].p_signal[:,7])
-
-refecg = np.array(refecg).transpose()
-cecg1 = np.array(cecg1).transpose()
-cecg2 = np.array(cecg2).transpose()
-cecg3 = np.array(cecg3).transpose()
-cecg4 = np.array(cecg4).transpose()
+    unovis_data[i] = wfdb.rdrecord(f"//media/medit-student/Volume/alperen/repo-clone/thesis/data/unovis/studydata/UnoViS_BigD_{str_i}/UnoViS_BigD_{str_i}")
+    refecg = np.concatenate((refecg, unovis_data[i].p_signal[:,0]))
+    cecg1 = np.concatenate((cecg1, unovis_data[i].p_signal[:,4]))
+    cecg2 = np.concatenate((cecg2, unovis_data[i].p_signal[:,5]))
+    cecg3 = np.concatenate((cecg3, unovis_data[i].p_signal[:,6]))
+    cecg4 = np.concatenate((cecg4, unovis_data[i].p_signal[:,7]))
 
 print(refecg.shape, cecg1.shape, cecg2.shape, cecg3.shape, cecg4.shape)
 
-plt.plot(cecg1, label = "cecg1")
+"""plt.plot(cecg1, label = "cecg1")
 plt.plot(refecg, label = "refecg")
 plt.legend()
-plt.show()
+plt.savefig("plots/temp-unovis")"""
 
 

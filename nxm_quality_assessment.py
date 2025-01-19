@@ -68,7 +68,7 @@ class NoiseDetector(nn.Module):
 
         #FC layer and softmax
         self.flatten1 = nn.Flatten()
-        self.fc1 = nn.Linear(in_features=1408, out_features=1024)
+        self.fc1 = nn.Linear(in_features=448, out_features=1024)
         self.relu5 = nn.ReLU()
 
         #self.flatten2 = nn.Flatten()
@@ -132,7 +132,7 @@ class NoiseDetector(nn.Module):
 
 if __name__ == "__main__":
 
-    records_file = open("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/RECORDS")
+    """records_file = open("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/RECORDS")
     noise_em = wfdb.rdrecord("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/nstdb/1.0.0/em").p_signal
 
     clean_signals = {}
@@ -195,9 +195,17 @@ if __name__ == "__main__":
         print(f"Peaks done and added to the dataset for record {key}")
         print(f"Class distribution of the record: {sum(target_labels)/len(target_labels)}")
 
-        """if key == "100":
-                break """
 
+
+    y = torch.Tensor(target_labels)
+    X = torch.Tensor(training_data)
+
+   #save peaks for future 
+    torch.save(X, "tensors/mit_all_records_X_w360.pt")
+    torch.save(y, "tensors/mit_all_records_y_w360.pt")   
+
+
+"""
 
     # define training hyperparameters
     INIT_LR = 1e-4
@@ -207,13 +215,9 @@ if __name__ == "__main__":
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-    y = torch.Tensor(target_labels)
-    X = torch.Tensor(training_data)
-
-   #save peaks for future 
-    torch.save(X, "tensors/mit_all_records_X_w360.pt")
-    torch.save(y, "tensors/mit_all_records_y_w360.pt")    
+   # load the data from saved tensors
+    X = torch.load("tensors/unovis_all_records_X_w120.pt")
+    y = torch.load("tensors/unovis_all_records_y_w120.pt")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=31)
@@ -354,7 +358,7 @@ if __name__ == "__main__":
     plt.xlabel('Epochs')
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig("mit_all_Acc_Plot 1 window")
+    plt.savefig("unovis_all_Acc_Plot_w120")
     plt.clf()
 
     plt.plot(results_train_loss, label='Train Loss')
@@ -364,4 +368,4 @@ if __name__ == "__main__":
     plt.title('Loss')
     plt.legend()
 
-    plt.savefig('mit_all_Loss_Plot 1 window.png')
+    plt.savefig('unovis_all_Loss_Plot_w120.png')

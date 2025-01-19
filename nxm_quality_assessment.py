@@ -208,9 +208,9 @@ if __name__ == "__main__":
 """
 
     # define training hyperparameters
-    INIT_LR = 1e-4
-    BATCH_SIZE = 32
-    EPOCHS = 2
+    INIT_LR = 1e-3
+    BATCH_SIZE = 4096
+    EPOCHS = 300
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -306,7 +306,8 @@ if __name__ == "__main__":
 
         avgTrainAcc = float(train_acc/len(y_train))
         avgTrainLoss = float(totalTrainLoss /trainSteps)
-        print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, avgTrainLoss, avgTrainAcc))
+        if e % 10 == 0:
+            print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, avgTrainLoss, avgTrainAcc))
 
         # update our training history
         results_train_acc.append(avgTrainAcc)
@@ -350,7 +351,8 @@ if __name__ == "__main__":
 
         avgValAcc = float(val_acc/len(y_test))
         avgValLoss = float(totalValLoss /testSteps)
-        print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
+        if e % 10 == 0:
+            print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
 
         # update our training history
         results_val_acc.append(avgValAcc)
@@ -363,13 +365,13 @@ if __name__ == "__main__":
         endTime - startTime))
 
 
-    """    plt.plot(results_train_acc, label='Train Acc')
+    plt.plot(results_train_acc, label='Train Acc')
     plt.plot(results_val_acc, label='Val Acc')
     plt.title('Accuracy')
     plt.xlabel('Epochs')
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig("plots/conf_matrix_temp")
+    plt.savefig(f"plots/unovis_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()
 
     plt.plot(results_train_loss, label='Train Loss')
@@ -378,11 +380,12 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig('plots/conf_matrix_temp')
-    plt.clf()"""
+    plt.savefig(f"plots/unovis_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.clf()
 
    #display confusion matrix for the best accuracy epoch
     best_epoch = np.argmax(results_val_acc)
     disp_conf_matrix = ConfusionMatrixDisplay(conf_matrices_every_epoch[best_epoch])
     disp_conf_matrix.plot()
-    plt.savefig("plots/conf_matrix_temp")
+    plt.savefig(f"plots/unovis_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.clf()

@@ -2,6 +2,15 @@ import matplotlib.pyplot as plt
 import wfdb
 import wfdb.processing
 import numpy as np
+from scipy.signal import butter, lfilter
+
+def butter_bandpass(lowcut, highcut, fs, order=5):
+    return butter(order, [lowcut, highcut], fs=fs, btype='band')
+
+def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
 
 
 unovis_data = {}
@@ -21,9 +30,10 @@ Unovis psignal keys:
 6 = cecg3
 7 = cecg4
 """
+
 # read the data from the records
 
-for i in range (51, 200):
+for i in range (51, 55):
     if i == 194:
         continue
     str_i = str(i)
@@ -36,6 +46,15 @@ for i in range (51, 200):
 
 print(refecg.shape, cecg1.shape, cecg2.shape, cecg3.shape, cecg4.shape)
 
+#band pass filtering with butterworth 
+fs = 360.0
+lowcut = 0.5
+highcut = 40
+cecg1 = butter_bandpass_filter(cecg1, lowcut, highcut, fs, order=2)
+cecg2 = butter_bandpass_filter(cecg2, lowcut, highcut, fs, order=2)
+cecg3 = butter_bandpass_filter(cecg3, lowcut, highcut, fs, order=2)
+cecg4 = butter_bandpass_filter(cecg4, lowcut, highcut, fs, order=2)
+
 # create segments, find peaks and classify
 fs = 360
 i = 0
@@ -44,7 +63,8 @@ WINDOW_SIZE = 1*fs
 cecg1_labels =[]
 cecg2_labels =[]
 cecg3_labels =[]
-cecg4_labels =[]    
+cecg4_labels =[]
+
 
 while i+WINDOW_SIZE < cecg1.shape[-1]:
 
@@ -56,7 +76,7 @@ while i+WINDOW_SIZE < cecg1.shape[-1]:
         cecg1_labels.append(1)
     else:
         cecg1_labels.append(0)
-    
+
     cecg2_peaks = wfdb.processing.xqrs_detect(cecg2[i:i + WINDOW_SIZE], fs=360, verbose=False)
     
     if set(ref_peaks) == set(cecg2_peaks):

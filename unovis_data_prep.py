@@ -37,7 +37,7 @@ Unovis psignal keys:
 
 # read the data from the records
 exclusion_set =[62, 66, 70, 79, 83, 86, 94, 99, 103, 121, 122, 129, 146, 147, 159, 174, 179, 181, 187, 189, 194] 
-for record_no in range (51, 53):
+for record_no in range (51, 70):
     if record_no in exclusion_set:
         continue
     str_record_no = str(record_no)
@@ -164,8 +164,8 @@ y_total = np.delete(y_total,[0])
 X_tensor = torch.Tensor(X_total)
 y_tensor = torch.Tensor(y_total)
 
-print(X_tensor.shape, y_tensor.shape, X_tensor.shape == y_tensor.shape)
-
+torch.save(X_tensor, "tensors/twenty_records_from_unovis_X.pt")
+torch.save(y_tensor, "tensors/twenty_records_from_unovis_y.pt")
 
 
 

@@ -33,9 +33,9 @@ Unovis psignal keys:
 """
 
 # read the data from the records
-
-for i in range (55, 57):
-    if i == 194:
+exclusion_set =[62, 66, 70, 79, 83, 86, 94, 99, 103, 121, 122, 129, 146, 147, 159, 174, 179, 181, 187, 189, 194] 
+for i in range (51, 70):
+    if i in exclusion_set:
         continue
     str_i = str(i)
     unovis_data[i] = wfdb.rdrecord(f"//media/medit-student/Volume/alperen/repo-clone/thesis/data/unovis/studydata/UnoViS_BigD_{str_i}/UnoViS_BigD_{str_i}")

@@ -213,10 +213,7 @@ if __name__ == "__main__":
 
    #save peaks for future 
     torch.save(X, "tensors/mit_all_records_X_w360.pt")
-    torch.save(y, "tensors/mit_all_records_y_w360.pt")
-
-    a = 
-    
+    torch.save(y, "tensors/mit_all_records_y_w360.pt")    
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=31)

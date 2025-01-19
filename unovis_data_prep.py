@@ -3,6 +3,7 @@ import wfdb
 import wfdb.processing
 import numpy as np
 from scipy.signal import butter, lfilter
+from sklearn.preprocessing import MinMaxScaler
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     return butter(order, [lowcut, highcut], fs=fs, btype='band')
@@ -33,7 +34,7 @@ Unovis psignal keys:
 
 # read the data from the records
 
-for i in range (51, 55):
+for i in range (55, 57):
     if i == 194:
         continue
     str_i = str(i)
@@ -58,40 +59,63 @@ cecg4 = butter_bandpass_filter(cecg4, lowcut, highcut, fs, order=2)
 # create segments, find peaks and classify
 fs = 360
 i = 0
-WINDOW_SIZE = 1*fs
+WINDOW_SIZE = 120
 
 cecg1_labels =[]
 cecg2_labels =[]
 cecg3_labels =[]
 cecg4_labels =[]
 
+# scale each segment, then look for peaks
 
 while i+WINDOW_SIZE < cecg1.shape[-1]:
 
-    ref_peaks = wfdb.processing.xqrs_detect(refecg[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    ref_segment =refecg[i:i + WINDOW_SIZE].reshape(-1,1)
+    cecg1_segment = cecg1[i:i + WINDOW_SIZE].reshape(-1,1)
+    cecg2_segment = cecg2[i:i + WINDOW_SIZE].reshape(-1,1)
+    cecg3_segment = cecg3[i:i + WINDOW_SIZE].reshape(-1,1)
+    cecg4_segment = cecg4[i:i + WINDOW_SIZE].reshape(-1,1)
+    
+    """    plt.plot(ref_segment, label = "ref before")
+    plt.plot(cecg1_segment, label = "cecg1 before")"""
 
-    cecg1_peaks = wfdb.processing.xqrs_detect(cecg1[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    scaler = MinMaxScaler()
+    ref_segment = scaler.fit_transform(ref_segment).squeeze()
+    cecg1_segment = scaler.fit_transform(cecg1_segment).squeeze()
+    cecg2_segment = scaler.fit_transform(cecg2_segment).squeeze()
+    cecg3_segment = scaler.fit_transform(cecg3_segment).squeeze()
+    cecg4_segment = scaler.fit_transform(cecg4_segment).squeeze()
+
+    """    plt.plot(ref_segment, label = "ref after")
+    plt.plot(cecg1_segment, label = "cecg1 after")
+    plt.legend()
+    plt.title("Before after scaling in segment")
+    plt.savefig("plots/scaler try")
+    plt.clf()"""
+
+    ref_peaks = wfdb.processing.xqrs_detect(ref_segment, fs=360, verbose=False)
+    cecg1_peaks = wfdb.processing.xqrs_detect(cecg1_segment, fs=360, verbose=False)
 
     if set(ref_peaks) == set(cecg1_peaks):
         cecg1_labels.append(1)
     else:
         cecg1_labels.append(0)
 
-    cecg2_peaks = wfdb.processing.xqrs_detect(cecg2[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    cecg2_peaks = wfdb.processing.xqrs_detect(cecg2_segment, fs=360, verbose=False)
     
     if set(ref_peaks) == set(cecg2_peaks):
         cecg2_labels.append(1)
     else:
         cecg2_labels.append(0)
 
-    cecg3_peaks = wfdb.processing.xqrs_detect(cecg3[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    cecg3_peaks = wfdb.processing.xqrs_detect(cecg3_segment, fs=360, verbose=False)
    
     if set(ref_peaks) == set(cecg3_peaks):
         cecg3_labels.append(1)
     else:
         cecg3_labels.append(0)
 
-    cecg4_peaks = wfdb.processing.xqrs_detect(cecg4[i:i + WINDOW_SIZE], fs=360, verbose=False)
+    cecg4_peaks = wfdb.processing.xqrs_detect(cecg4_segment, fs=360, verbose=False)
     
     if set(ref_peaks) == set(cecg4_peaks):
         cecg4_labels.append(1)
@@ -101,9 +125,10 @@ while i+WINDOW_SIZE < cecg1.shape[-1]:
     i = i + WINDOW_SIZE
 
 print(f"Class distribution of the cecg1: {sum(cecg1_labels)/len(cecg1_labels)}")
-print(f"Class distribution of the cecg1: {sum(cecg2_labels)/len(cecg2_labels)}")
-print(f"Class distribution of the cecg1: {sum(cecg3_labels)/len(cecg3_labels)}")
-print(f"Class distribution of the cecg1: {sum(cecg4_labels)/len(cecg4_labels)}")
+print(f"Class distribution of the cecg2: {sum(cecg2_labels)/len(cecg2_labels)}")
+print(f"Class distribution of the cecg3: {sum(cecg3_labels)/len(cecg3_labels)}")
+print(f"Class distribution of the cecg4: {sum(cecg4_labels)/len(cecg4_labels)}")
 
+#print(f"Number of peaks found: {len(ref_peaks)}")
 
 

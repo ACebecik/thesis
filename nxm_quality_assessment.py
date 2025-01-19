@@ -216,8 +216,16 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
    # load the data from saved tensors
-    X = torch.load("tensors/unovis_all_records_X_w120.pt")
-    y = torch.load("tensors/unovis_all_records_y_w120.pt")
+    X_mit = torch.load("tensors/mit_all_records_X_w120_fixed.pt")
+    y_mit = torch.load("tensors/mit_all_records_y_w360.pt")
+
+    X_unovis = torch.load("tensors/unovis_all_records_X_w120.pt")
+    y_unovis = torch.load("tensors/unovis_all_records_y_w120.pt")
+
+    X = np.vstack((X_mit, X_unovis))
+    y = np.concatenate((y_mit, y_unovis))
+
+    print(X.shape, y.shape)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=31)
@@ -371,7 +379,7 @@ if __name__ == "__main__":
     plt.xlabel('Epochs')
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig(f"plots/unovis_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig(f"plots/UM_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()
 
     plt.plot(results_train_loss, label='Train Loss')
@@ -380,12 +388,12 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"plots/unovis_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig(f"plots/UM_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()
 
    #display confusion matrix for the best accuracy epoch
     best_epoch = np.argmax(results_val_acc)
     disp_conf_matrix = ConfusionMatrixDisplay(conf_matrices_every_epoch[best_epoch])
     disp_conf_matrix.plot()
-    plt.savefig(f"plots/unovis_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig(f"plots/UM_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()

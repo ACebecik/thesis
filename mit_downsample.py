@@ -18,4 +18,4 @@ downsampled_X = np.delete(downsampled_X, (0),axis=0 )
 print(downsampled_X.shape) 
 
 downsampled_X_tensor = torch.Tensor(downsampled_X) 
-torch.save(downsampled_X, "tensors/mit_all_records_X_w120.pt")
+torch.save(downsampled_X_tensor, "tensors/mit_all_records_X_w120.pt")

@@ -211,6 +211,7 @@ if __name__ == "__main__":
     INIT_LR = 1e-3
     BATCH_SIZE = 4096
     EPOCHS = 300
+    DATA_AUGMENTATION = True
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -229,10 +230,14 @@ if __name__ == "__main__":
     X = np.vstack((X_mit, X_unovis))
     y = np.concatenate((y_mit, y_unovis))
 
-    print(sum(y) / y.shape[0])
-
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2)
+
+    if DATA_AUGMENTATION == True:
+        X_train = torch.load("tensors/augmented_UM_train_X.pt")
+        y_train = torch.load("tensors/augmented_UM_train_y.pt")
+        X_test = torch.load ("tensors/augmented_UM_test_X.pt")
+        y_test = torch.load("tensors/augmented_UM_test_y.pt")
 
     trainData = CustomDataset(X_train, y_train)
     testData = CustomDataset(X_test, y_test)
@@ -383,7 +388,7 @@ if __name__ == "__main__":
     plt.xlabel('Epochs')
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig(f"plots/UM_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig(f"plots/augmented_UM_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()
 
     plt.plot(results_train_loss, label='Train Loss')
@@ -392,12 +397,12 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"plots/UM_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig(f"plots/augmented_UM_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()
 
    #display confusion matrix for the best accuracy epoch
     best_epoch = np.argmax(results_val_acc)
     disp_conf_matrix = ConfusionMatrixDisplay(conf_matrices_every_epoch[best_epoch])
     disp_conf_matrix.plot()
-    plt.savefig(f"plots/UM_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig(f"plots/augmented_UM_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
     plt.clf()

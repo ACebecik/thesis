@@ -22,13 +22,14 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
 from load_data_from_tensors import LoadDataFromTensor
+from train import ClassificationTrainer
 
 if __name__ == "__main__":
 
     # define training hyperparameters
     INIT_LR = 5e-4
-    BATCH_SIZE = 8192
-    EPOCHS = 300
+    BATCH_SIZE = 4096
+    EPOCHS = 10
     CHOSEN_DATASET = "augmented_um"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
@@ -37,48 +38,15 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
    # load the data from saved tensors
-    """
-    if CHOSEN_DATASET == "augmented_um":
-        X_train = torch.load("tensors/augmented_UM_train_X.pt")
-        y_train = torch.load("tensors/augmented_UM_train_y.pt")
-        X_test = torch.load ("tensors/augmented_UM_test_X.pt")
-        y_test = torch.load("tensors/augmented_UM_test_y.pt")
-    
-    elif CHOSEN_DATASET == 'um':
-        X_mit = torch.load("tensors/mit_all_records_X_w120_fixed.pt")
-        y_mit = torch.load("tensors/mit_all_records_y_w360.pt")
-
-        X_unovis = torch.load("tensors/unovis_all_records_X_w120.pt")
-        y_unovis = torch.load("tensors/unovis_all_records_y_w120.pt")
-
-        X = np.vstack((X_mit, X_unovis))
-        y = np.concatenate((y_mit, y_unovis))
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=31)      
-    
-    elif CHOSEN_DATASET == 'mit':
-        X_mit = torch.load("tensors/mit_all_records_X_w120_fixed.pt")
-        y_mit = torch.load("tensors/mit_all_records_y_w360.pt")
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_mit, y_mit, test_size=0.2, random_state=31)    
-
-    elif CHOSEN_DATASET == "unovis":
-        X_unovis = torch.load("tensors/unovis_all_records_X_w120.pt")
-        y_unovis = torch.load("tensors/unovis_all_records_y_w120.pt")
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_unovis, y_unovis, test_size=0.2, random_state=31)
-    """     
-    
     tensorLoader = LoadDataFromTensor(chosen_dataset=CHOSEN_DATASET, 
                                       random_seed=RANDOM_SEED,
                                       test_size=TEST_SIZE)
     tensorLoader.load()
-    
+
+    """    
     trainData = CustomDataset(tensorLoader.X_train, tensorLoader.y_train)
     testData = CustomDataset(tensorLoader.X_test, tensorLoader.y_test)
+
     train_size = tensorLoader.y_train.shape[0]
     test_size = tensorLoader.y_test.shape[0]  
 
@@ -134,9 +102,7 @@ if __name__ == "__main__":
             X_batch,y_batch = torch.unsqueeze(X_batch,1),torch.unsqueeze(y_batch,1)
             #X_batch,y_batch = torch.unsqueeze(X_batch,0), torch.unsqueeze(y_batch,0)
 
-            """            # break if end of dataset
-                        if X_batch.shape[-1] < BATCH_SIZE:
-                            break"""
+
 
             # send the input to the device
             (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
@@ -184,9 +150,6 @@ if __name__ == "__main__":
             for X_batch, y_batch in testDataLoader:
                 X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
 
-                """                # break if end of dataset
-                                if x.shape[-1] < BATCH_SIZE:
-                                    break"""
 
                 # send the input to the device
                 (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
@@ -221,6 +184,18 @@ if __name__ == "__main__":
     print("[INFO] total time taken to train the model: {:.2f}s".format(
         endTime - startTime))
 
+"""
+    
+    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+                                       X_train=tensorLoader.X_train,
+                                       y_train=tensorLoader.y_train,
+                                       X_test=tensorLoader.X_test,
+                                       y_test=tensorLoader.y_test
+                                       )
+    
+    classifier.train()
+    results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+    best_confusion_matrix = classifier.getBestConfusionMatrix()
 
     plt.plot(results_train_acc, label='Train Acc')
     plt.plot(results_val_acc, label='Val Acc')
@@ -228,7 +203,8 @@ if __name__ == "__main__":
     plt.xlabel('Epochs')
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig(f"plots/augmented_UM_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+   # plt.savefig(f"plots/augmented_UM_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig("Code cleaning acc")
     plt.clf()
 
     plt.plot(results_train_loss, label='Train Loss')
@@ -237,14 +213,15 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"plots/augmented_UM_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+   # plt.savefig(f"plots/augmented_UM_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig("Code cleaning loss")
     plt.clf()
 
    #display confusion matrix for the best accuracy epoch
-    best_epoch = np.argmax(results_val_acc)
-    disp_conf_matrix = ConfusionMatrixDisplay(conf_matrices_every_epoch[best_epoch])
+    disp_conf_matrix = ConfusionMatrixDisplay(best_confusion_matrix)
     disp_conf_matrix.plot()
-    plt.savefig(f"plots/augmented_UM_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+   # plt.savefig(f"plots/augmented_UM_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
+    plt.savefig("Code cleaning conf mat")
     plt.clf()
 
    # store log of experiment

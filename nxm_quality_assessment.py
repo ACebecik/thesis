@@ -219,16 +219,20 @@ if __name__ == "__main__":
     X_mit = torch.load("tensors/mit_all_records_X_w120_fixed.pt")
     y_mit = torch.load("tensors/mit_all_records_y_w360.pt")
 
+
     X_unovis = torch.load("tensors/unovis_all_records_X_w120.pt")
     y_unovis = torch.load("tensors/unovis_all_records_y_w120.pt")
+
+    print(y_mit.shape)
+    print(y_unovis.shape)
 
     X = np.vstack((X_mit, X_unovis))
     y = np.concatenate((y_mit, y_unovis))
 
-    print(X.shape, y.shape)
+    print(sum(y) / y.shape[0])
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=31)
+        X, y, test_size=0.2)
 
     trainData = CustomDataset(X_train, y_train)
     testData = CustomDataset(X_test, y_test)

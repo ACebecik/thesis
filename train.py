@@ -1,4 +1,6 @@
-"""This file implements the training for given hyperparameters and train/test sets."""
+"""This file implements the training for given hyperparameters and train/test sets.
+For the motion artifact compensation, it is a temporary idea to get the classification from
+last epoch. Ideally there needs to be early stopping to detect overfit and take there."""
 
 import torch
 import torch.nn as nn
@@ -71,6 +73,8 @@ class ClassificationTrainer():
         self.results_val_acc = []
         self.results_val_loss = []
         self.conf_matrices_every_epoch =[]  
+
+        self.compensation_segment_idxs = torch.empty(0).to(device=self.device)
     
     def train(self):
 
@@ -149,6 +153,10 @@ class ClassificationTrainer():
                     predictions = (predProbVal>0.5)*1
                     temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
                     conf_matrix = np.add(conf_matrix, temp_conf_matrix)
+                   
+                    # save predictions to compensate artifacts
+                    if e+1 == self.no_epochs:
+                        self.compensation_segment_idxs = torch.cat((self.compensation_segment_idxs, predictions))
 
             avgValAcc = float(val_acc/self.test_size)
             avgValLoss = float(totalValLoss /self.no_testSteps)
@@ -166,7 +174,7 @@ class ClassificationTrainer():
 
     def getRawResults(self):
         return (self.results_train_acc, self.results_train_loss, self.results_val_acc, self.results_val_loss)
-    
+
     def getBestConfusionMatrix(self):
         self.best_epoch = np.argmax(self.results_val_acc)
         return self.conf_matrices_every_epoch[self.best_epoch]
@@ -183,3 +191,17 @@ class ClassificationTrainer():
 
         return self.accuracy, self.specificity, self.sensitivity
     
+    def getCompensationSegments(self):
+
+        zero_indices = np.where(self.compensation_segment_idxs.cpu().numpy() == 0)[0] 
+        masked_X_test = np.zeros((1,120))
+        masked_y_test = [] 
+
+        for idx in tqdm(zero_indices):
+            masked_X_test = np.vstack((masked_X_test, self.X_test[idx]))
+            masked_y_test.append(self.y_test[idx])
+        
+        masked_X_test = np.delete(masked_X_test,[0])
+
+        return torch.Tensor(masked_X_test), torch.Tensor(masked_y_test)
+

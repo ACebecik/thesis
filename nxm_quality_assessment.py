@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # define training hyperparameters
     INIT_LR = 5e-4
     BATCH_SIZE = 4096
-    EPOCHS = 10
+    EPOCHS = 2
     CHOSEN_DATASET = "augmented_um"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
@@ -60,3 +60,4 @@ if __name__ == "__main__":
     plotter.plot_loss(results_train_loss, results_val_loss)
     plotter.plot_confusion_matrix(best_confusion_matrix)
 
+    compensation_X_test, compensation_y_test = classifier.getCompensationSegments()

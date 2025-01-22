@@ -23,6 +23,7 @@ from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
 from load_data_from_tensors import LoadDataFromTensor
 from train import ClassificationTrainer
+from plotter import Plotter
 
 if __name__ == "__main__":
 
@@ -42,150 +43,7 @@ if __name__ == "__main__":
                                       random_seed=RANDOM_SEED,
                                       test_size=TEST_SIZE)
     tensorLoader.load()
-
-    """    
-    trainData = CustomDataset(tensorLoader.X_train, tensorLoader.y_train)
-    testData = CustomDataset(tensorLoader.X_test, tensorLoader.y_test)
-
-    train_size = tensorLoader.y_train.shape[0]
-    test_size = tensorLoader.y_test.shape[0]  
-
-    # initialize the train, validation, and test data loaders
-    trainDataLoader = DataLoader(trainData, shuffle=True,batch_size=BATCH_SIZE)
-    testDataLoader = DataLoader(testData, shuffle=True, batch_size=BATCH_SIZE)
-    # calculate steps per epoch for training and validation set
-    trainSteps = len(trainDataLoader.dataset) // BATCH_SIZE
-    testSteps = len(testDataLoader.dataset) // BATCH_SIZE
-
-    print("Initializing model...")
-    model = NoiseDetector(in_channels=1).to(device)
-    opt = optim.Adam(model.parameters(), lr=INIT_LR)
-    lossFn = nn.BCEWithLogitsLoss()
-
-    # initialize a dictionary to store training history
-    H = {
-        "train_loss": [],
-        "train_acc": [],
-        "val_loss": [],
-        "val_acc": []
-    }
-
-    results_train_acc = []
-    results_train_loss = []
-    results_val_acc = []
-    results_val_loss = []
-
-    conf_matrices_every_epoch =[] 
-
-
-    # measure how long training is going to take
-    print("[INFO] training the network...")
-    startTime = time.time()
-
-
-    # loop over epochs
-    for e in tqdm(range(0, EPOCHS)):
-
-        # TRAINING
-        # train the model
-        model.train()
-
-        # initialize the total training and validation loss
-        totalTrainLoss = 0
-        totalValLoss = 0
-        train_acc = 0
-        val_acc = 0
-
-
-        # loop over the training set in batches
-        for X_batch, y_batch in trainDataLoader:
-            X_batch,y_batch = torch.unsqueeze(X_batch,1),torch.unsqueeze(y_batch,1)
-            #X_batch,y_batch = torch.unsqueeze(X_batch,0), torch.unsqueeze(y_batch,0)
-
-
-
-            # send the input to the device
-            (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
-
-            opt.zero_grad()
-            # perform a forward pass and calculate the training loss
-            pred = model(X_batch)
-            #print(pred.shape, y.shape)
-            loss = lossFn(pred, y_batch)
-            getPreds = nn.Sigmoid()
-            predProb = getPreds(pred)
-
-            train_acc = train_acc +  ((predProb>0.5) ==y_batch).sum() # correctly predicted samples
-
-            # add the loss to the total training loss so far and
-            # calculate the number of correct predictions
-            totalTrainLoss = totalTrainLoss + loss
-
-
-            # zero out the gradients, perform the backpropagation step,
-            # and update the weights
-            loss.backward()
-            opt.step()
-
-        avgTrainAcc = float(train_acc/train_size)
-        avgTrainLoss = float(totalTrainLoss /trainSteps)
-        if e % 10 == 0:
-            print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, avgTrainLoss, avgTrainAcc))
-
-        # update our training history
-        results_train_acc.append(avgTrainAcc)
-        results_train_loss.append(avgTrainLoss)
-
-
-        #EVAL
-        # switch off autograd for evaluation
-        with torch.no_grad():
-            # set the model in evaluation mode
-            model.eval()
-
-            # clear confusion matrix
-            conf_matrix =np.zeros((2,2)) 
  
-            # loop over the validation set
-            for X_batch, y_batch in testDataLoader:
-                X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
-
-
-                # send the input to the device
-                (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
-
-                # make the predictions and calculate the validation loss
-                pred = model(X_batch)
-                lossVal = lossFn(pred, y_batch)
-
-                predProbVal = getPreds(pred)
-
-                totalValLoss = totalValLoss + lossVal
-
-                val_acc = val_acc + ((predProbVal>0.5)==y_batch).sum()
-
-               # confusion matrix 
-                predictions = (predProbVal>0.5)*1
-                temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
-                conf_matrix = np.add(conf_matrix, temp_conf_matrix)
-
-        avgValAcc = float(val_acc/test_size)
-        avgValLoss = float(totalValLoss /testSteps)
-        if e % 10 == 0:
-            print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
-
-        # update our training history
-        results_val_acc.append(avgValAcc)
-        results_val_loss.append(avgValLoss)
-        conf_matrices_every_epoch.append(conf_matrix)
-
-    # finish measuring how long training took
-    endTime = time.time()
-    print("[INFO] total time taken to train the model: {:.2f}s".format(
-        endTime - startTime))
-
-"""
-    
     classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
                                        X_train=tensorLoader.X_train,
                                        y_train=tensorLoader.y_train,
@@ -197,31 +55,8 @@ if __name__ == "__main__":
     results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
     best_confusion_matrix = classifier.getBestConfusionMatrix()
 
-    plt.plot(results_train_acc, label='Train Acc')
-    plt.plot(results_val_acc, label='Val Acc')
-    plt.title('Accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel("Accuracy")
-    plt.legend()
-   # plt.savefig(f"plots/augmented_UM_all_Acc_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
-    plt.savefig("Code cleaning acc")
-    plt.clf()
+    plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
+    plotter.plot_accuracy(results_train_acc,results_val_acc)
+    plotter.plot_loss(results_train_loss, results_val_loss)
+    plotter.plot_confusion_matrix(best_confusion_matrix)
 
-    plt.plot(results_train_loss, label='Train Loss')
-    plt.plot(results_val_loss, label='Val Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel("Loss")
-    plt.title('Loss')
-    plt.legend()
-   # plt.savefig(f"plots/augmented_UM_all_Loss_plot_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
-    plt.savefig("Code cleaning loss")
-    plt.clf()
-
-   #display confusion matrix for the best accuracy epoch
-    disp_conf_matrix = ConfusionMatrixDisplay(best_confusion_matrix)
-    disp_conf_matrix.plot()
-   # plt.savefig(f"plots/augmented_UM_all_Conf_Matrix_w120_lr{INIT_LR}_batchsize{BATCH_SIZE}.png")
-    plt.savefig("Code cleaning conf mat")
-    plt.clf()
-
-   # store log of experiment

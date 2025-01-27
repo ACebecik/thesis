@@ -55,12 +55,29 @@ class LoadDataFromTensor():
             y_mit = torch.load("tensors/mit_all_records_y_w360.pt")
 
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-                X, y, test_size=self.test_size, random_state=self.random_seed)    
+                X_mit, y_mit, test_size=self.test_size, random_state=self.random_seed)    
 
         elif self.chosen_dataset == "unovis":
             X_unovis = torch.load("tensors/unovis_all_records_X_w120.pt")
             y_unovis = torch.load("tensors/unovis_all_records_y_w120.pt")
 
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-                X, y, test_size=self.test_size, random_state=self.random_seed)  
+                X_unovis, y_unovis, test_size=self.test_size, random_state=self.random_seed)  
+            
+    def loadClean(self):
+        if self.chosen_dataset == "augmented_um":
+            pass
+        
+        elif self.chosen_dataset == 'um':
+            pass    
+        
+        elif self.chosen_dataset == 'mit':
+            X_mit = torch.load("tensors/mit_all_records_X_w120_fixed.pt")
+            y_mit = torch.load("tensors/mit_clean_all_records_X_w120.pt")
+
+            self.X_train_comp, self.X_test_comp, self.y_train_comp, self.y_test_comp = train_test_split(
+                X_mit, y_mit, test_size=self.test_size, random_state=self.random_seed)    
+
+        elif self.chosen_dataset == "unovis":
+            pass 
             

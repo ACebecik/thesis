@@ -24,14 +24,15 @@ from classification_models import NoiseDetector
 from load_data_from_tensors import LoadDataFromTensor
 from train import ClassificationTrainer
 from plotter import Plotter
+from train_compensator import CompensationTrainer
 
 if __name__ == "__main__":
 
     # define training hyperparameters
     INIT_LR = 5e-4
-    BATCH_SIZE = 4096
-    EPOCHS = 2
-    CHOSEN_DATASET = "augmented_um"
+    BATCH_SIZE = 1024
+    EPOCHS = 50
+    CHOSEN_DATASET = "mit"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
 
@@ -61,3 +62,25 @@ if __name__ == "__main__":
     plotter.plot_confusion_matrix(best_confusion_matrix)
 
     compensation_X_test, compensation_y_test = classifier.getCompensationSegments()
+
+    tensorLoader.loadClean()
+
+    compensator = CompensationTrainer(lr=INIT_LR,
+                                      batch_size=BATCH_SIZE,
+                                      no_epochs=EPOCHS,
+                                      X_train=tensorLoader.X_train_comp,
+                                      y_train=tensorLoader.y_train_comp, 
+                                      X_test=tensorLoader.X_test_comp,
+                                      y_test=tensorLoader.y_test_comp)
+    compensator.train()
+    
+    comp_results_train_loss, comp_results_test_loss = compensator.getRawResults()
+
+    plt.plot(comp_results_train_loss, label='Train Loss')
+    plt.plot(comp_results_test_loss, label='Val Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel("Loss")
+    plt.title('Loss')
+    plt.legend()
+    plt.savefig(f"Compensation_test_LOSS.png")
+    plt.clf()

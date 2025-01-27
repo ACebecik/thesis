@@ -1,0 +1,71 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+import wfdb
+import wfdb.processing
+import scipy
+import time
+import math
+import torchvision
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from torch.utils.data import Dataset
+from sklearn.metrics import classification_report
+import argparse
+import pickle
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
+
+
+if __name__ == "__main__":
+
+    records_file = open("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/RECORDS")
+
+    clean_signals = {}
+
+    name = ""
+    for char in records_file.read():
+        if char == '\n':
+            continue
+        name = name+char
+        if len(name) == 3:
+            clean_signals[name] = wfdb.rdrecord(f"/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/{name}").p_signal
+            name=""
+    print(clean_signals.keys())
+
+    records_file.close()
+
+    # window size is 1 seconds of measurement to indicate clean / noisy fragment
+
+    fs = 360 # sampling rate
+    #window_size = 3 * fs
+
+
+    WINDOW_SIZE = 1*fs
+    dataset = []
+    top_labels = []
+
+    training_data = []
+
+    # find if peaks match = usable, if not = unusable
+    for key in clean_signals.keys():
+
+        record_length = len(clean_signals[key])
+        i = 0
+        while i < record_length:
+            if i + WINDOW_SIZE >= record_length:
+                break
+            batched_train_data = clean_signals[key][i:i + WINDOW_SIZE, 0]
+            training_data.append(batched_train_data)
+            i = i + WINDOW_SIZE
+
+        print(f"Read clean data for record: {key}")
+
+    X = torch.Tensor(training_data)
+
+   #save peaks for future 
+    torch.save(X, "tensors/mit_clean_all_records_X_w360.pt")

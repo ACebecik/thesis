@@ -34,7 +34,7 @@ class DRDNN(nn.Module):
     def __init__(self, batch_size):
         super(DRDNN,self).__init__()
 
-        self.lstm = nn.LSTM(input_size=batch_size, hidden_size=64)
+        self.lstm = nn.LSTM(input_size=120, hidden_size=64)
         self.fc1 = nn.Linear(in_features=64, out_features=64)
         self.relu1 = nn.ReLU()
 
@@ -46,9 +46,9 @@ class DRDNN(nn.Module):
     def forward(self, x):
 
         out, (ht, ct) = self.lstm(x)
-        out = out[:, -1]
-         
-        x = self.fc1(x)
+        out = out[:, -1, :]
+
+        x = self.fc1(out)
         x = self.relu1(x)
         x = self.fc2(x)
         x = self.relu2(x)

@@ -104,6 +104,7 @@ class CompensationTrainer():
                 self.opt.zero_grad()
                 # perform a forward pass and calculate the training loss
                 pred = self.model(X_batch)
+                pred = torch.unsqueeze(pred,dim=1)
                 loss = self.lossFn(pred, y_batch)
 
                 # add the loss to the total training loss so far and
@@ -138,6 +139,7 @@ class CompensationTrainer():
 
                     # make the predictions and calculate the validation loss
                     pred = self.model(X_batch)
+                    pred = torch.unsqueeze(pred,dim=1)
                     lossVal = self.lossFn(pred, y_batch)
 
                     totalValLoss = totalValLoss + lossVal

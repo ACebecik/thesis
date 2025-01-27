@@ -158,3 +158,21 @@ class CompensationTrainer():
 
     def getRawResults(self):
         return (self.results_train_loss, self.results_val_loss)
+
+
+    def getRandomSnapshot(self,random_seed):
+        
+       self.X_test = torch.unsqueeze(self.X_test, dim=1).to(device=self.device) 
+       self.y_test = torch.unsqueeze(self.y_test, dim=1).to(device=self.device)
+
+       y_pred = self.model(self.X_test)
+
+       self.X_test = torch.squeeze(self.X_test).cpu().numpy()
+       self.y_test = torch.squeeze(self.y_test).cpu().numpy()
+       y_pred = y_pred.cpu().detach().numpy()
+
+       plt.plot(y_pred[random_seed,:], label="compensated signal")
+       plt.plot(self.X_test[random_seed,:], label="noisy signal" )
+       plt.plot(self.y_test[random_seed,:], label="reference clean signal" )
+       plt.legend()
+       plt.savefig(f"snaps/snapshot of one segment seed{random_seed}snap.png")

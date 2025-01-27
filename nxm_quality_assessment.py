@@ -84,3 +84,5 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig(f"Compensation_test_LOSS.png")
     plt.clf()
+
+    compensator.getRandomSnapshot(random_seed=40)

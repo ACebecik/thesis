@@ -32,7 +32,7 @@ if __name__ == "__main__":
     INIT_LR = 5e-4
     BATCH_SIZE = 1024
     EPOCHS = 50
-    CHOSEN_DATASET = "mit"
+    CHOSEN_DATASET = "augmented_um"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
 
@@ -85,4 +85,4 @@ if __name__ == "__main__":
     plt.savefig(f"Compensation_test_LOSS.png")
     plt.clf()
 
-    compensator.getRandomSnapshot(random_seed=40)
+    compensator.getRandomSnapshot(random_seed=60)

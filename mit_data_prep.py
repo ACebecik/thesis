@@ -55,7 +55,6 @@ if __name__ == "__main__":
     fs = 360 # sampling rate
     #window_size = 3 * fs
 
-
     WINDOW_SIZE = 1*fs
     dataset = []
     top_labels = []

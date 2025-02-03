@@ -16,6 +16,7 @@ from scipy.signal import butter, lfilter
 from sklearn.preprocessing import MinMaxScaler
 import torch
 import pickle
+from tqdm import tqdm
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     return butter(order, [lowcut, highcut], fs=fs, btype='band')
@@ -42,10 +43,10 @@ class unovisReader():
 
         # read the data from the records
         exclusion_set =[62, 66, 70, 79, 83, 86, 94, 99, 103, 121, 122, 129, 146, 147, 159, 174, 179, 181, 187, 189, 194] 
-        for record_no in range (51, 200):
+        for record_no in tqdm(range (51, 53)):
             if record_no in exclusion_set:
                 continue
-            self.patient_indexes.append(record_no*1000)
+            self.patient_indexes.append(record_no)
 
             str_record_no = str(record_no)
             unovis_data[record_no] = wfdb.rdrecord(f"//media/medit-student/Volume/alperen/repo-clone/thesis/data/unovis/studydata/UnoViS_BigD_{str_record_no}/UnoViS_BigD_{str_record_no}")
@@ -160,6 +161,21 @@ class unovisReader():
                 self.labels_to_use[record_no] = cecg4_labels
 
         print(self.data_to_use.keys(), self.reference_data.keys(), self.labels_to_use.keys())
+       
+        # format the data into 120 length segments 
+        for key in self.data_to_use.keys():
+            i = 0
+            temp_noisy = []
+            temp_ref =[]   
+            while i + WINDOW_SIZE < self.data_to_use[key].shape[0]:
+                temp_noisy.append(self.data_to_use[key][i:i+ WINDOW_SIZE])
+                temp_ref.append(self.reference_data[key][i: i+ WINDOW_SIZE])
+
+                i = i + WINDOW_SIZE
+            
+            self.data_to_use[key] = np.array(temp_noisy)
+            self.reference_data[key] = np.array(temp_ref)  
+            
 
     def saveData(self):
         with open("dictionaries/unovis_reference_ecg_by_patients.pkl", "wb") as f:

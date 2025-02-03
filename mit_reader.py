@@ -106,8 +106,15 @@ class mitReader():
                     else:
                         target_labels.append(0)
 
-                training_data.append(noisy_segment)
-                clean_data.append(clean_segment)
+               # downsample the segments
+                noisy_segment_np = np.array(noisy_segment)
+                noisy_segment_np = noisy_segment_np[::3]
+    
+                clean_segment_np = np.array(clean_segment)
+                clean_segment_np = clean_segment_np[::3]
+
+                training_data.append(noisy_segment_np)
+                clean_data.append(clean_segment_np)
 
                 i = i + WINDOW_SIZE
 
@@ -115,13 +122,12 @@ class mitReader():
             print(f"Class distribution of the record: {sum(target_labels)/len(target_labels)}")
 
             training_data_np = np.array(training_data)
-            self.data_to_use[key] = training_data_np
-
             target_labels_np = np.array(target_labels)
-            self.labels_to_use[key] = target_labels_np
-
             clean_data_np = np.array(clean_data)
-            self.reference_data[key] = clean_data_np 
+            
+            self.data_to_use[int(key)] = training_data_np
+            self.labels_to_use[int(key)] = target_labels_np
+            self.reference_data[int(key)] = clean_data_np 
 
             print(self.data_to_use.keys(), self.reference_data.keys(), self.labels_to_use.keys())
 

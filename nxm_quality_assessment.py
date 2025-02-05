@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # define training hyperparameters
     INIT_LR = 5e-4
-    BATCH_SIZE = 8192
+    BATCH_SIZE = 16384
     EPOCHS = 100
     CHOSEN_DATASET = "um"
     RANDOM_SEED = 31
@@ -101,9 +101,10 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig(f"Normalized_Compensation_test_LOSS.png")
     plt.clf()
+    
+    for i in (range(200,1200,20)):
+        try:
+            compensator.getRandomSnapshot(random_seed=i)
+        except:
+            print(f"Snapshot failed for seed {i} ")
 
-for i in (range(40,200,20)):
-    try:
-        compensator.getRandomSnapshot(random_seed=i)
-    except:
-        print(f"Snapshot failed for seed {i} ")

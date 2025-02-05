@@ -162,17 +162,21 @@ class CompensationTrainer():
 
     def getRandomSnapshot(self,random_seed):
         
-       self.X_test = torch.unsqueeze(self.X_test, dim=1).to(device=self.device) 
-       self.y_test = torch.unsqueeze(self.y_test, dim=1).to(device=self.device)
+       X_snap = torch.unsqueeze(self.X_test[random_seed, :] , dim=0).to(device=self.device) 
+       y_snap = torch.unsqueeze(self.y_test[random_seed, :] , dim=0).to(device=self.device)
+        
+       X_snap = torch.unsqueeze(X_snap , dim=0) 
+       y_snap = torch.unsqueeze(y_snap , dim=0)
 
-       y_pred = self.model(self.X_test)
+       y_pred_snap = self.model(X_snap)
 
-       self.X_test = torch.squeeze(self.X_test).cpu().numpy()
-       self.y_test = torch.squeeze(self.y_test).cpu().numpy()
-       y_pred = y_pred.cpu().detach().numpy()
+       X_snap = torch.squeeze(X_snap).cpu().numpy()
+       y_snap = torch.squeeze(y_snap).cpu().numpy()
+       y_pred_snap = torch.squeeze(y_pred_snap).cpu().detach().numpy()
 
-       plt.plot(y_pred[random_seed,:], label="compensated signal")
-       plt.plot(self.X_test[random_seed,:], label="noisy signal" )
-       plt.plot(self.y_test[random_seed,:], label="reference clean signal" )
+       plt.plot(y_pred_snap, label="compensated signal")
+       plt.plot(X_snap, label="noisy signal" )
+       plt.plot(y_snap, label="reference clean signal" )
        plt.legend()
        plt.savefig(f"snaps/snapshot of one segment seed{random_seed}snap.png")
+       plt.clf()

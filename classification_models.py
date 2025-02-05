@@ -1,4 +1,6 @@
-"""This file implements the classification models for the quality assessment task."""
+"""This file implements the classification models for the quality assessment task.
+Implemented models:
+1- CNN from Ansari, 2018"""
 
 import torch
 import torch.nn as nn
@@ -53,65 +55,41 @@ class NoiseDetector(nn.Module):
         self.pool4 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.drop4 = nn.Dropout(p=0.3)
 
-        #FC layer and softmax
+        #FC layers
         self.flatten1 = nn.Flatten()
         self.fc1 = nn.Linear(in_features=448, out_features=1024)
         self.relu5 = nn.ReLU()
 
-        #self.flatten2 = nn.Flatten()
         self.fc2 = nn.Linear(in_features=1024, out_features=1)
 
 
     def forward(self, x):
-        "Define the forward pass"
+        # Defines the forward pass
 
-        #print('before conv1 layer x.shape:', x.shape)
-
-        #layer 1
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
         x = self.drop1(x)
 
-        #print('before conv2 layer x.shape:', x.shape)
-
-        #layer 2
         x = self.conv2(x)
         x = self.relu2(x)
         x = self.pool2(x)
         x = self.drop2(x)
 
-        #print('before conv3 layer x.shape:', x.shape)
-
-        #layer 3
         x = self.conv3(x)
         x = self.relu3(x)
         x = self.pool3(x)
         x = self.drop3(x)
 
-        #print('before conv4 layer x.shape:', x.shape)
-
-        #layer 4
         x = self.conv4(x)
         x = self.relu4(x)
         x = self.pool4(x)
         x = self.drop4(x)
 
-        #print('before linear1 layer x.shape:', x.shape)
         x = self.flatten1(x)
-
-        #print('after flatten linear1 layer x.shape:', x.shape)
-
         x = self.fc1(x)
         x = self.relu5(x)
 
-        #print('before linear2 layer x.shape:', x.shape)
-
-        #x = self.flatten2(x)
         x = self.fc2(x)
-        #print('after linear2 layer x.shape:', x.shape)
-        #output = self.logSoftmax(x)"""
-        """        x = torch.unsqueeze(x, dim = 0)
-                    x = x.repeat(1,384,1)"""
 
         return x

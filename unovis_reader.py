@@ -43,7 +43,7 @@ class unovisReader():
 
         # read the data from the records
         exclusion_set =[62, 66, 70, 79, 83, 86, 94, 99, 103, 121, 122, 129, 146, 147, 159, 174, 179, 181, 187, 189, 194] 
-        for record_no in tqdm(range (51, 53)):
+        for record_no in tqdm(range (51, 200)):
             if record_no in exclusion_set:
                 continue
             self.patient_indexes.append(record_no)

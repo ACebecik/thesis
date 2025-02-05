@@ -25,31 +25,48 @@ from load_data_from_tensors import LoadDataFromTensor
 from train import ClassificationTrainer
 from plotter import Plotter
 from train_compensator import CompensationTrainer
+from load_data_from_dicts import LoadDataFromDicts
 
 if __name__ == "__main__":
 
     # define training hyperparameters
     INIT_LR = 5e-4
-    BATCH_SIZE = 1024
-    EPOCHS = 50
-    CHOSEN_DATASET = "augmented_um"
+    BATCH_SIZE = 8192
+    EPOCHS = 100
+    CHOSEN_DATASET = "um"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    """
+    # load the data from saved tensors
+        tensorLoader = LoadDataFromDicts(chosen_dataset=CHOSEN_DATASET, 
+                                        random_seed=RANDOM_SEED,
+                                        test_size=TEST_SIZE)
+        tensorLoader.load()
+    
+        classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+                                        X_train=tensorLoader.X_train,
+                                        y_train=tensorLoader.y_train,
+                                        X_test=tensorLoader.X_test,
+                                        y_test=tensorLoader.y_test
+                                        )"""
 
-   # load the data from saved tensors
-    tensorLoader = LoadDataFromTensor(chosen_dataset=CHOSEN_DATASET, 
-                                      random_seed=RANDOM_SEED,
-                                      test_size=TEST_SIZE)
-    tensorLoader.load()
- 
+    X_train = torch.load("tensors/patient_based/um_train_X.pt")
+    X_test = torch.load("tensors/patient_based/um_test_X.pt")
+    X_train_reference = torch.load("tensors/patient_based/um_reference_train_X.pt")
+    X_test_reference = torch.load("tensors/patient_based/um_reference_test_X.pt")
+
+    y_train = torch.load("tensors/patient_based/um_train_y.pt")
+    y_test = torch.load("tensors/patient_based/um_test_y.pt")
+
+
     classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
-                                       X_train=tensorLoader.X_train,
-                                       y_train=tensorLoader.y_train,
-                                       X_test=tensorLoader.X_test,
-                                       y_test=tensorLoader.y_test
+                                       X_train=X_train,
+                                       y_train=y_train,
+                                       X_test=X_test,
+                                       y_test=y_test
                                        )
     
     classifier.train()
@@ -61,17 +78,17 @@ if __name__ == "__main__":
     plotter.plot_loss(results_train_loss, results_val_loss)
     plotter.plot_confusion_matrix(best_confusion_matrix)
 
-    compensation_X_test, compensation_y_test = classifier.getCompensationSegments()
+   # compensation_X_test, compensation_y_test = classifier.getCompensationSegments()
 
-    tensorLoader.loadClean()
+   # tensorLoader.loadClean()
 
     compensator = CompensationTrainer(lr=INIT_LR,
                                       batch_size=BATCH_SIZE,
                                       no_epochs=EPOCHS,
-                                      X_train=tensorLoader.X_train_comp,
-                                      y_train=tensorLoader.y_train_comp, 
-                                      X_test=tensorLoader.X_test_comp,
-                                      y_test=tensorLoader.y_test_comp)
+                                      X_train=X_train,
+                                      y_train=X_train_reference, 
+                                      X_test=X_test,
+                                      y_test=X_test_reference)
     compensator.train()
     
     comp_results_train_loss, comp_results_test_loss = compensator.getRawResults()
@@ -82,7 +99,11 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"Compensation_test_LOSS.png")
+    plt.savefig(f"Normalized_Compensation_test_LOSS.png")
     plt.clf()
 
-    compensator.getRandomSnapshot(random_seed=60)
+for i in (range(40,200,20)):
+    try:
+        compensator.getRandomSnapshot(random_seed=i)
+    except:
+        print(f"Snapshot failed for seed {i} ")

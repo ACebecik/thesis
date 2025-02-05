@@ -125,9 +125,9 @@ class mitReader():
             target_labels_np = np.array(target_labels)
             clean_data_np = np.array(clean_data)
             
-            self.data_to_use[int(key)] = training_data_np
-            self.labels_to_use[int(key)] = target_labels_np
-            self.reference_data[int(key)] = clean_data_np 
+            self.data_to_use[int(key)*1000] = training_data_np
+            self.labels_to_use[int(key)*1000] = target_labels_np
+            self.reference_data[int(key)*1000] = clean_data_np 
 
             print(self.data_to_use.keys(), self.reference_data.keys(), self.labels_to_use.keys())
 

@@ -36,28 +36,24 @@ class DRDNN(nn.Module):
 
         self.lstm = nn.LSTM(input_size=120, hidden_size=120)
         self.fc1 = nn.Linear(in_features=120, out_features=120)
-    """        
-        self.fc1 = nn.Linear(in_features=64, out_features=64)
+        self.fc1 = nn.Linear(in_features=120, out_features=120)
         self.relu1 = nn.ReLU()
 
-        self.fc2 = nn.Linear(in_features=64, out_features=64)
+        self.fc2 = nn.Linear(in_features=120, out_features=120)
         self.relu2 = nn.ReLU()
         
-        self.fc3 = nn.Linear(in_features=64, out_features=120)
-    """
+        self.fc3 = nn.Linear(in_features=120, out_features=120)
+
     def forward(self, x):
 
         out, (ht, ct) = self.lstm(x)
         out = out[:, -1, :]
 
-        """        
         x = self.fc1(out)
         x = self.relu1(x)
         x = self.fc2(x)
         x = self.relu2(x)
         x = self.fc3(x)
-        """
-        x = self.fc1(out)
 
         return x
     

@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # define training hyperparameters
     INIT_LR = 5e-4
     BATCH_SIZE = 16384
-    EPOCHS = 100
+    EPOCHS = 50
     CHOSEN_DATASET = "um"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
@@ -61,34 +61,34 @@ if __name__ == "__main__":
     y_train = torch.load("tensors/patient_based/um_train_y.pt")
     y_test = torch.load("tensors/patient_based/um_test_y.pt")
 
-    """
-        classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
-                                        X_train=X_train,
-                                        y_train=y_train,
-                                        X_test=X_test,
-                                        y_test=y_test
-                                        )
-        
-        classifier.train()
-        results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
-        best_confusion_matrix = classifier.getBestConfusionMatrix()
+    
+    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+                                    X_train=X_train,
+                                    y_train=y_train,
+                                    X_test=X_test,
+                                    y_test=y_test,
+                                    X_test_reference=X_test_reference
+                                    )
+    
+    classifier.train()
+    results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+    best_confusion_matrix = classifier.getBestConfusionMatrix()
 
-        plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
-        plotter.plot_accuracy(results_train_acc,results_val_acc)
-        plotter.plot_loss(results_train_loss, results_val_loss)
-        plotter.plot_confusion_matrix(best_confusion_matrix)"""
+    """plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
+    plotter.plot_accuracy(results_train_acc,results_val_acc)
+    plotter.plot_loss(results_train_loss, results_val_loss)
+    plotter.plot_confusion_matrix(best_confusion_matrix)"""
 
-   # compensation_X_test, compensation_y_test = classifier.getCompensationSegments()
+    compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
 
-   # tensorLoader.loadClean()
 
     compensator = CompensationTrainer(lr=INIT_LR,
                                       batch_size=BATCH_SIZE,
                                       no_epochs=EPOCHS,
                                       X_train=X_train,
                                       y_train=X_train_reference, 
-                                      X_test=X_test,
-                                      y_test=X_test_reference)
+                                      X_test=compensation_X_test,
+                                      y_test=compensation_X_test_references)
     compensator.train()
     
     comp_results_train_loss, comp_results_test_loss = compensator.getRawResults()
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"Normalized_Compensation_test_LOSS.png")
+    plt.savefig(f"only-negatives-Normalized_Compensation_test_LOSS.png")
     plt.clf()
     
     for i in (range(200,1200,20)):

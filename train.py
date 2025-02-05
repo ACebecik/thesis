@@ -30,7 +30,7 @@ from load_data_from_tensors import LoadDataFromTensor
 
 class ClassificationTrainer():
     def __init__(self, lr, batch_size, no_epochs, 
-                 X_train, y_train, X_test, y_test,
+                 X_train, y_train, X_test, y_test, X_test_reference,
                  model_name = "cnn"):
         
         self.model_name = model_name
@@ -41,6 +41,8 @@ class ClassificationTrainer():
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
+        self.X_test_reference = X_test_reference
+        self.compensation_X_test_segments = [] 
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -72,11 +74,18 @@ class ClassificationTrainer():
         self.results_train_loss = []
         self.results_val_acc = []
         self.results_val_loss = []
-        self.conf_matrices_every_epoch =[]  
+        self.conf_matrices_every_epoch =[] 
+
+
+
 
         self.compensation_segment_idxs = torch.empty(0).to(device=self.device)
     
     def train(self):
+
+        compensation_X_test_segments = [] 
+        corresponding_X_test_reference = []   
+
 
         print("[INFO] Starting training...")
         startTime = time.time()
@@ -134,6 +143,7 @@ class ClassificationTrainer():
 
                 # clear confusion matrix
                 conf_matrix =np.zeros((2,2)) 
+                batch_counter = 0
     
                 # loop over the validation set
                 for X_batch, y_batch in self.testDataLoader:
@@ -154,9 +164,20 @@ class ClassificationTrainer():
                     temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
                     conf_matrix = np.add(conf_matrix, temp_conf_matrix)
                    
-                    # save predictions to compensate artifacts
+                    # based on predictions choose where to compensate artifacts
                     if e+1 == self.no_epochs:
-                        self.compensation_segment_idxs = torch.cat((self.compensation_segment_idxs, predictions))
+
+                        zero_indices = np.where(predictions.cpu().numpy() == 0)[0] 
+
+
+                        for idx in tqdm(zero_indices):
+                            compensation_X_test_segments.append(np.array(X_batch[idx,:,:].cpu()))
+                            real_idx = batch_counter * self.batch_size + idx
+                            corresponding_X_test_reference.append(np.array(self.X_test_reference[real_idx,:].cpu()))
+                        
+                        batch_counter = batch_counter + 1
+
+
 
             avgValAcc = float(val_acc/self.test_size)
             avgValLoss = float(totalValLoss /self.no_testSteps)
@@ -171,6 +192,15 @@ class ClassificationTrainer():
         # finish measuring how long training took
         endTime = time.time()
         print("[INFO] total time taken to train the model: {:.2f}s".format(endTime - startTime))
+
+        # convert the compensation segments
+        compensation_X_test_segments_np = np.array(compensation_X_test_segments)
+        corresponding_X_test_reference_np = np.array(corresponding_X_test_reference)
+
+        self.compensation_X_test_segments = torch.Tensor(compensation_X_test_segments_np)
+        self.compensation_X_test_reference = torch.Tensor(corresponding_X_test_reference_np)
+
+        self.compensation_X_test_segments = torch.squeeze(self.compensation_X_test_segments)
 
     def getRawResults(self):
         return (self.results_train_acc, self.results_train_loss, self.results_val_acc, self.results_val_loss)
@@ -193,15 +223,5 @@ class ClassificationTrainer():
     
     def getCompensationSegments(self):
 
-        zero_indices = np.where(self.compensation_segment_idxs.cpu().numpy() == 0)[0] 
-        masked_X_test = np.zeros((1,120))
-        masked_y_test = [] 
-
-        for idx in tqdm(zero_indices):
-            masked_X_test = np.vstack((masked_X_test, self.X_test[idx]))
-            masked_y_test.append(self.y_test[idx])
-        
-        masked_X_test = np.delete(masked_X_test,[0])
-
-        return torch.Tensor(masked_X_test), torch.Tensor(masked_y_test)
+        return self.compensation_X_test_segments, self.compensation_X_test_reference
 

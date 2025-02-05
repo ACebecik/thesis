@@ -61,22 +61,22 @@ if __name__ == "__main__":
     y_train = torch.load("tensors/patient_based/um_train_y.pt")
     y_test = torch.load("tensors/patient_based/um_test_y.pt")
 
+    """
+        classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+                                        X_train=X_train,
+                                        y_train=y_train,
+                                        X_test=X_test,
+                                        y_test=y_test
+                                        )
+        
+        classifier.train()
+        results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+        best_confusion_matrix = classifier.getBestConfusionMatrix()
 
-    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
-                                       X_train=X_train,
-                                       y_train=y_train,
-                                       X_test=X_test,
-                                       y_test=y_test
-                                       )
-    
-    classifier.train()
-    results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
-    best_confusion_matrix = classifier.getBestConfusionMatrix()
-
-    plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
-    plotter.plot_accuracy(results_train_acc,results_val_acc)
-    plotter.plot_loss(results_train_loss, results_val_loss)
-    plotter.plot_confusion_matrix(best_confusion_matrix)
+        plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
+        plotter.plot_accuracy(results_train_acc,results_val_acc)
+        plotter.plot_loss(results_train_loss, results_val_loss)
+        plotter.plot_confusion_matrix(best_confusion_matrix)"""
 
    # compensation_X_test, compensation_y_test = classifier.getCompensationSegments()
 

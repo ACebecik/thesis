@@ -28,15 +28,15 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
 from load_data_from_tensors import LoadDataFromTensor
-from compensation_models import DRDNN
+from compensation_models import DRDNN, FCN_DAE
 
 
 class CompensationTrainer():
     def __init__(self, lr, batch_size, no_epochs, 
                  X_train, y_train, X_test, y_test,
-                 model_name = "drdnn"):
+                 model_arch = "drdnn"):
         
-        self.model_name = model_name
+        self.model_name = model_arch
         self.lr = lr
         self.batch_size = batch_size
         self.no_epochs = no_epochs
@@ -65,6 +65,9 @@ class CompensationTrainer():
         
         if self.model_name == "drdnn":
             self.model = DRDNN(batch_size=self.batch_size).to(device=self.device)
+        
+        elif self.model_name == "fcn-dae":
+            self.model = FCN_DAE().to(device=self.device)
        # more models can be added here for extensions 
 
         self.opt = optim.Adam(self.model.parameters(), lr=self.lr)
@@ -104,7 +107,8 @@ class CompensationTrainer():
                 self.opt.zero_grad()
                 # perform a forward pass and calculate the training loss
                 pred = self.model(X_batch)
-                pred = torch.unsqueeze(pred,dim=1)
+                if self.model_name == "drdnn":
+                    pred = torch.unsqueeze(pred,dim=1)
                 loss = self.lossFn(pred, y_batch)
 
                 # add the loss to the total training loss so far and
@@ -139,7 +143,8 @@ class CompensationTrainer():
 
                     # make the predictions and calculate the validation loss
                     pred = self.model(X_batch)
-                    pred = torch.unsqueeze(pred,dim=1)
+                    if self.model_name == "drdnn":
+                        pred = torch.unsqueeze(pred,dim=1)
                     lossVal = self.lossFn(pred, y_batch)
 
                     totalValLoss = totalValLoss + lossVal

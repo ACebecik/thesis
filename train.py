@@ -170,12 +170,13 @@ class ClassificationTrainer():
                         zero_indices = np.where(predictions.cpu().numpy() == 0)[0] 
 
 
-                        for idx in tqdm(zero_indices):
+                        for idx in zero_indices:
                             compensation_X_test_segments.append(np.array(X_batch[idx,:,:].cpu()))
                             real_idx = batch_counter * self.batch_size + idx
                             corresponding_X_test_reference.append(np.array(self.X_test_reference[real_idx,:].cpu()))
                         
                         batch_counter = batch_counter + 1
+                        
 
 
 

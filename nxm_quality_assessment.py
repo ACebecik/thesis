@@ -31,11 +31,12 @@ if __name__ == "__main__":
 
     # define training hyperparameters
     INIT_LR = 5e-4
-    BATCH_SIZE = 16384
+    BATCH_SIZE = 1024
     EPOCHS = 50
     CHOSEN_DATASET = "um"
     RANDOM_SEED = 31
     TEST_SIZE = 0.2
+    COMPENSATOR_ARCH = "fcn-dae"
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -85,6 +86,7 @@ if __name__ == "__main__":
     compensator = CompensationTrainer(lr=INIT_LR,
                                       batch_size=BATCH_SIZE,
                                       no_epochs=EPOCHS,
+                                      model_arch=COMPENSATOR_ARCH,
                                       X_train=X_train,
                                       y_train=X_train_reference, 
                                       X_test=compensation_X_test,

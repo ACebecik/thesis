@@ -80,7 +80,7 @@ if __name__ == "__main__":
     plotter.plot_loss(results_train_loss, results_val_loss)
     plotter.plot_confusion_matrix(best_confusion_matrix)"""
 
-    compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
+   # compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
 
 
     compensator = CompensationTrainer(lr=INIT_LR,
@@ -89,8 +89,8 @@ if __name__ == "__main__":
                                       model_arch=COMPENSATOR_ARCH,
                                       X_train=X_train,
                                       y_train=X_train_reference, 
-                                      X_test=compensation_X_test,
-                                      y_test=compensation_X_test_references)
+                                      X_test=X_test,
+                                      y_test=X_test_reference)
     compensator.train()
     
     comp_results_train_loss, comp_results_test_loss = compensator.getRawResults()
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"only-negatives-Normalized_Compensation_test_LOSS.png")
+    plt.savefig(f"plots/compensation/um_test_LOSS.png")
     plt.clf()
     
     for i in (range(200,1200,20)):
@@ -109,4 +109,3 @@ if __name__ == "__main__":
             compensator.getRandomSnapshot(random_seed=i)
         except:
             print(f"Snapshot failed for seed {i} ")
-

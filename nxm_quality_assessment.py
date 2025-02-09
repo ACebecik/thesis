@@ -80,7 +80,7 @@ if __name__ == "__main__":
     plotter.plot_loss(results_train_loss, results_val_loss)
     plotter.plot_confusion_matrix(best_confusion_matrix)"""
 
-   # compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
+   #  compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
 
 
     compensator = CompensationTrainer(lr=INIT_LR,
@@ -104,8 +104,16 @@ if __name__ == "__main__":
     plt.savefig(f"plots/compensation/um_test_LOSS.png")
     plt.clf()
     
-    for i in (range(200,1200,20)):
+    zero_idx_list = classifier.zero_indices
+    
+    max_snaps = 50
+    snap_counter = 0
+    for i in zero_idx_list:
+        if snap_counter == max_snaps:
+            break
         try:
             compensator.getRandomSnapshot(random_seed=i)
+            snap_counter = snap_counter + 1
         except:
             print(f"Snapshot failed for seed {i} ")
+        

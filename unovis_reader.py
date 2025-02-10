@@ -49,7 +49,7 @@ class unovisReader():
             self.patient_indexes.append(record_no)
 
             str_record_no = str(record_no)
-            unovis_data[record_no] = wfdb.rdrecord(f"//media/medit-student/Volume/alperen/repo-clone/thesis/data/unovis/studydata/UnoViS_BigD_{str_record_no}/UnoViS_BigD_{str_record_no}")
+            unovis_data[record_no] = wfdb.rdrecord(f"data/unovis/studydata/UnoViS_BigD_{str_record_no}/UnoViS_BigD_{str_record_no}")
             refecg = unovis_data[record_no].p_signal[:,0]
             cecg1 = unovis_data[record_no].p_signal[:,4]
             cecg2 = unovis_data[record_no].p_signal[:,5]
@@ -73,11 +73,10 @@ class unovisReader():
             i = 0
             WINDOW_SIZE = 120
 
-            cecg1_labels =[]
-            cecg2_labels =[]
-            cecg3_labels =[]
-            cecg4_labels =[]
-
+            noisy_segments_per_record = [] 
+            labels_per_record = []
+            ref_segments_per_record =[]
+            
             # scale each segment, then look for peaks
 
             while i+WINDOW_SIZE < cecg1.shape[-1]:
@@ -88,6 +87,8 @@ class unovisReader():
                 cecg3_segment = cecg3[i:i + WINDOW_SIZE].reshape(-1,1)
                 cecg4_segment = cecg4[i:i + WINDOW_SIZE].reshape(-1,1)
                 
+                i = i + WINDOW_SIZE
+
                 scaler = MinMaxScaler()
                 ref_segment = scaler.fit_transform(ref_segment).squeeze()
                 cecg1_segment = scaler.fit_transform(cecg1_segment).squeeze()
@@ -96,95 +97,97 @@ class unovisReader():
                 cecg4_segment = scaler.fit_transform(cecg4_segment).squeeze()
 
                 ref_peaks = wfdb.processing.xqrs_detect(ref_segment, fs=360, verbose=False)
+
+               # If there is no peaks in reference ecg, skip that segment
+                
+                if not ref_peaks.size > 0:
+                    continue 
+                
+               # Set the label flags for each channel
+               # If there is a correctly identified peak, add that segment and skip to the next segment 
+                
                 cecg1_peaks = wfdb.processing.xqrs_detect(cecg1_segment, fs=360, verbose=False)
 
-                if set(ref_peaks) == set(cecg1_peaks):
-                    cecg1_labels.append(1)
+                if not cecg1_peaks.size > 0:
+                    cecg1_labels = 0
+                elif ref_peaks[0] < cecg1_peaks[0] + 5 or ref_peaks[0] > cecg1_peaks[0] - 5 :
+                    cecg1_labels = 1
+                    noisy_segments_per_record.append(cecg1_segment)
+                    labels_per_record.append(1)
+                    ref_segments_per_record.append(ref_segment)
+                    continue
+
                 else:
-                    cecg1_labels.append(0)
+                    cecg1_labels = 0
 
                 cecg2_peaks = wfdb.processing.xqrs_detect(cecg2_segment, fs=360, verbose=False)
                 
-                if set(ref_peaks) == set(cecg2_peaks):
-                    cecg2_labels.append(1)
+                if not cecg2_peaks.size > 0:
+                    cecg2_labels = 0
+                elif ref_peaks[0] < cecg2_peaks[0] + 5 or ref_peaks[0] > cecg2_peaks[0] - 5 :
+                    cecg2_labels = 1
+                    noisy_segments_per_record.append(cecg2_segment)
+                    labels_per_record.append(1)
+                    ref_segments_per_record.append(ref_segment)
+                    continue
+
                 else:
-                    cecg2_labels.append(0)
+                    cecg2_labels = 0
 
                 cecg3_peaks = wfdb.processing.xqrs_detect(cecg3_segment, fs=360, verbose=False)
             
-                if set(ref_peaks) == set(cecg3_peaks):
-                    cecg3_labels.append(1)
+                if not cecg3_peaks.size > 0:
+                    cecg3_labels = 0
+                elif ref_peaks[0] < cecg3_peaks[0] + 5 or ref_peaks[0] > cecg3_peaks[0] - 5 :
+                    noisy_segments_per_record.append(cecg3_segment)
+                    labels_per_record.append(1)
+                    cecg3_labels = 1
+                    ref_segments_per_record.append(ref_segment)
+                    continue
+
                 else:
-                    cecg3_labels.append(0)
+                    cecg3_labels = 0
 
                 cecg4_peaks = wfdb.processing.xqrs_detect(cecg4_segment, fs=360, verbose=False)
                 
-                if set(ref_peaks) == set(cecg4_peaks):
-                    cecg4_labels.append(1)
+                if not cecg4_peaks.size > 0:
+                    cecg4_labels = 0               
+                elif ref_peaks[0] < cecg4_peaks[0] + 5 or ref_peaks[0] > cecg4_peaks[0] - 5 :
+                    noisy_segments_per_record.append(cecg4_segment)
+                    labels_per_record.append(1)
+                    cecg4_labels = 1
+                    ref_segments_per_record.append(ref_segment)
+                    continue
+
                 else:
-                    cecg4_labels.append(0)
+                    cecg4_labels = 0
 
-                i = i + WINDOW_SIZE
-
-            print(f"Class Distribution of Channels for Record: {record_no}")
-            cd1 = sum(cecg1_labels)/len(cecg1_labels)
-            cd2 = sum(cecg2_labels)/len(cecg2_labels)
-            cd3 = sum(cecg3_labels)/len(cecg3_labels)
-            cd4 = sum(cecg4_labels)/len(cecg4_labels)
-
-            cd =[cd1, cd2, cd3, cd4]
-            print(f" Class Distributions of Channels:{cd}")
-            selected_channel = np.argmax(cd)
-            print (f"Selected Channel:{selected_channel + 1}")
+               # If code reaches here, it means no peaks are suitable in any of the channels, so classify as UNUSABLE SEGMENT.
+               # For the noisy segment, choose first channel.
             
-            cecg1_labels = np.array(cecg1_labels)
-            cecg2_labels = np.array(cecg2_labels)
-            cecg3_labels = np.array(cecg3_labels)
-            cecg4_labels = np.array(cecg4_labels)
+                noisy_segments_per_record.append(cecg1_segment)
+                ref_segments_per_record.append(ref_segment)
+                labels_per_record.append(0)
 
-            self.reference_data[record_no] = refecg 
+           # for each record, push the data into the dictionaries with the key information
+            self.data_to_use[record_no] = np.array(noisy_segments_per_record)
+            self.reference_data[record_no] = np.array(ref_segments_per_record)
+            self.labels_to_use[record_no] = np.array(labels_per_record)
 
-            if selected_channel == 0:
-                self.data_to_use[record_no] = cecg1
-                self.labels_to_use[record_no] = cecg1_labels
+            print(f"Finished Record:{record_no}. Class dist of record: {sum(labels_per_record)/len(labels_per_record)}")
+            print(f"Number of added segments: {len(labels_per_record)} ")
 
-            elif selected_channel == 1:
-                self.data_to_use[record_no] = cecg2
-                self.labels_to_use[record_no] = cecg2_labels
-
-            elif selected_channel == 2:
-                self.data_to_use[record_no] = cecg3
-                self.labels_to_use[record_no] = cecg3_labels
-
-            else:
-                self.data_to_use[record_no] = cecg4
-                self.labels_to_use[record_no] = cecg4_labels
-
-        print(self.data_to_use.keys(), self.reference_data.keys(), self.labels_to_use.keys())
-       
-        # format the data into 120 length segments 
-        for key in self.data_to_use.keys():
-            i = 0
-            temp_noisy = []
-            temp_ref =[]   
-            while i + WINDOW_SIZE < self.data_to_use[key].shape[0]:
-                temp_noisy.append(self.data_to_use[key][i:i+ WINDOW_SIZE])
-                temp_ref.append(self.reference_data[key][i: i+ WINDOW_SIZE])
-
-                i = i + WINDOW_SIZE
-            
-            self.data_to_use[key] = np.array(temp_noisy)
-            self.reference_data[key] = np.array(temp_ref)  
+        print(self.data_to_use.keys(), self.reference_data.keys(), self.labels_to_use.keys()) 
             
 
     def saveData(self):
-        with open("dictionaries/unovis_reference_ecg_by_patients.pkl", "wb") as f:
+        with open("dictionaries/new-1002/unovis_reference_ecg_by_patients.pkl", "wb") as f:
             pickle.dump(self.reference_data, f)
         
-        with open("dictionaries/unovis_cecg_by_patients.pkl", "wb") as f:
+        with open("dictionaries/new-1002/unovis_cecg_by_patients.pkl", "wb") as f:
             pickle.dump(self.data_to_use, f)
 
-        with open("dictionaries/unovis_cecg_labels_by_patients.pkl", "wb") as f:
+        with open("dictionaries/new-1002/unovis_cecg_labels_by_patients.pkl", "wb") as f:
             pickle.dump(self.labels_to_use, f)
 
 

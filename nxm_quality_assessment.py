@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # define training hyperparameters
     INIT_LR = 5e-4
-    BATCH_SIZE = 1024
+    BATCH_SIZE = 4096
     EPOCHS = 50
     CHOSEN_DATASET = "um"
     RANDOM_SEED = 31
@@ -54,26 +54,26 @@ if __name__ == "__main__":
                                         y_test=tensorLoader.y_test
                                         )"""
 
-    X_train = torch.load("tensors/patient_based/um_train_X.pt")
-    X_test = torch.load("tensors/patient_based/um_test_X.pt")
-    X_train_reference = torch.load("tensors/patient_based/um_reference_train_X.pt")
-    X_test_reference = torch.load("tensors/patient_based/um_reference_test_X.pt")
+    X_train = torch.load("tensors/new-1002/um_train_X.pt")
+   # X_test = torch.load("tensors/new-1002/um_test_X.pt")
+    X_train_reference = torch.load("tensors/new-1002/um_reference_train_X.pt")
+   # X_test_reference = torch.load("tensors/new-1002/um_reference_test_X.pt")
 
-    y_train = torch.load("tensors/patient_based/um_train_y.pt")
-    y_test = torch.load("tensors/patient_based/um_test_y.pt")
+   # y_train = torch.load("tensors/new-1002/um_train_y.pt")
+   #  y_test = torch.load("tensors/new-1002/um_test_y.pt")
 
     
-    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
-                                    X_train=X_train,
-                                    y_train=y_train,
-                                    X_test=X_test,
-                                    y_test=y_test,
-                                    X_test_reference=X_test_reference
-                                    )
-    
-    classifier.train()
-    results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
-    best_confusion_matrix = classifier.getBestConfusionMatrix()
+    """    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+                                        X_train=X_train,
+                                        y_train=y_train,
+                                        X_test=X_test,
+                                        y_test=y_test,
+                                        X_test_reference=X_test_reference
+                                        )
+        
+        classifier.train()
+        results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+        best_confusion_matrix = classifier.getBestConfusionMatrix()"""
 
     """plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
     plotter.plot_accuracy(results_train_acc,results_val_acc)
@@ -81,31 +81,62 @@ if __name__ == "__main__":
     plotter.plot_confusion_matrix(best_confusion_matrix)"""
 
    #  compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
+    
+    """    compensator = CompensationTrainer(lr=INIT_LR,
+                                        batch_size=BATCH_SIZE,
+                                        no_epochs=EPOCHS,
+                                        model_arch=COMPENSATOR_ARCH,
+                                        X_train=X_train,
+                                        y_train=X_train_reference, 
+                                        X_test=X_test,
+                                        y_test=X_test_reference)"""
+        
+    X_test_reference_mit = torch.load("tensors/new-1002/um_reference_test_X_mit.pt")
+    X_test_mit = torch.load("tensors/new-1002/um_test_X_mit.pt")
+
+    X_test_unovis = torch.load("tensors/new-1002/um_test_X_unovis.pt")
+    X_test_reference_unovis = torch.load("tensors/new-1002/um_reference_test_X_unovis.pt")
+    
+    compensator = CompensationTrainer(lr=INIT_LR,
+                                        batch_size=BATCH_SIZE,
+                                        no_epochs=EPOCHS,
+                                        model_arch=COMPENSATOR_ARCH,
+                                        X_train=X_train,
+                                        y_train=X_train_reference, 
+                                        X_test=X_test_mit,
+                                        y_test=X_test_reference_mit)
+
+    compensator.train()
+    
+    comp_results_train_loss_mit, comp_results_test_loss_mit = compensator.getRawResults()
 
 
     compensator = CompensationTrainer(lr=INIT_LR,
-                                      batch_size=BATCH_SIZE,
-                                      no_epochs=EPOCHS,
-                                      model_arch=COMPENSATOR_ARCH,
-                                      X_train=X_train,
-                                      y_train=X_train_reference, 
-                                      X_test=X_test,
-                                      y_test=X_test_reference)
-    compensator.train()
-    
-    comp_results_train_loss, comp_results_test_loss = compensator.getRawResults()
+                                        batch_size=BATCH_SIZE,
+                                        no_epochs=EPOCHS,
+                                        model_arch=COMPENSATOR_ARCH,
+                                        X_train=X_train,
+                                        y_train=X_train_reference, 
+                                        X_test=X_test_unovis,
+                                        y_test=X_test_reference_unovis)
 
-    plt.plot(comp_results_train_loss, label='Train Loss')
-    plt.plot(comp_results_test_loss, label='Val Loss')
+    compensator.train()
+    comp_results_train_loss_unovis, comp_results_test_loss_unovis = compensator.getRawResults()
+
+
+    plt.plot(comp_results_train_loss_unovis, label='Train Loss')
+    plt.plot(comp_results_test_loss_mit, label='MIT Val Loss')
+    plt.plot(comp_results_test_loss_unovis, label='UNOVIS Val Loss')
+
     plt.xlabel('Epochs')
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"plots/compensation/um_test_LOSS.png")
+    plt.savefig(f"plots/compensation/new-1002-um_test_LOSS_separate.png")
     plt.clf()
     
-    zero_idx_list = classifier.zero_indices
-    
+   # zero_idx_list = classifier.zero_indices
+    zero_idx_list = np.arange(20,600,10)
     max_snaps = 50
     snap_counter = 0
     for i in zero_idx_list:

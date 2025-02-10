@@ -46,13 +46,13 @@ class LoadDataFromDicts():
             with open('dictionaries/mit_reference_ecg_by_patients.pkl', 'rb') as f:
                 mit_reference_ecg = pickle.load(f)
 
-            with open('dictionaries/unovis_cecg_by_patients.pkl', 'rb') as f:
+            with open('dictionaries/new-1002/unovis_cecg_by_patients.pkl', 'rb') as f:
                 unovis_noisy_ecg = pickle.load(f)
 
-            with open('dictionaries/unovis_cecg_labels_by_patients.pkl', 'rb') as f:
+            with open('dictionaries/new-1002/unovis_cecg_labels_by_patients.pkl', 'rb') as f:
                 unovis_noisy_ecg_labels = pickle.load(f)
 
-            with open('dictionaries/unovis_reference_ecg_by_patients.pkl', 'rb') as f:
+            with open('dictionaries/new-1002/unovis_reference_ecg_by_patients.pkl', 'rb') as f:
                 unovis_reference_ecg = pickle.load(f)
 
             joined_noisy_ecg = {**mit_noisy_ecg, **unovis_noisy_ecg}
@@ -105,17 +105,102 @@ class LoadDataFromDicts():
             pass 
     
     def SaveToTensors(self):
-        torch.save(self.X_test, "tensors/patient_based/um_test_X.pt")
-        torch.save(self.y_test, "tensors/patient_based/um_test_y.pt")
-        torch.save(self.X_test_reference, "tensors/patient_based/um_reference_test_X.pt")
-        torch.save(self.X_train, "tensors/patient_based/um_train_X.pt")  
-        torch.save(self.y_train, "tensors/patient_based/um_train_y.pt")  
-        torch.save(self.X_train_reference, "tensors/patient_based/um_reference_train_X.pt") 
+        torch.save(self.X_test, "tensors/new-1002/um_test_X.pt")
+        torch.save(self.y_test, "tensors/new-1002/um_test_y.pt")
+        torch.save(self.X_test_reference, "tensors/new-1002/um_reference_test_X.pt")
+        torch.save(self.X_train, "tensors/new-1002/um_train_X.pt")  
+        torch.save(self.y_train, "tensors/new-1002/um_train_y.pt")  
+        torch.save(self.X_train_reference, "tensors/new-1002/um_reference_train_X.pt")
+
+    def LoadSaveWithDatasetInfo(self):
+
+       # gonna do another random here, will not be the same test keys with the other method
+       # need to implement some kind of seeding for future
+       #  ONLY WORKS FOR COMPENSATION FOR NOW
+
+        if self.chosen_dataset == "um":
+            with open('dictionaries/mit_noisy_ecg_by_patients.pkl', 'rb') as f:
+                mit_noisy_ecg = pickle.load(f)
+
+            with open('dictionaries/mit_noisy_ecg_labels_by_patients.pkl', 'rb') as f:
+                mit_noisy_ecg_labels = pickle.load(f)
+            
+            with open('dictionaries/mit_reference_ecg_by_patients.pkl', 'rb') as f:
+                mit_reference_ecg = pickle.load(f)
+
+            with open('dictionaries/new-1002/unovis_cecg_by_patients.pkl', 'rb') as f:
+                unovis_noisy_ecg = pickle.load(f)
+
+            with open('dictionaries/new-1002/unovis_cecg_labels_by_patients.pkl', 'rb') as f:
+                unovis_noisy_ecg_labels = pickle.load(f)
+
+            with open('dictionaries/new-1002/unovis_reference_ecg_by_patients.pkl', 'rb') as f:
+                unovis_reference_ecg = pickle.load(f)
+
+            joined_noisy_ecg = {**mit_noisy_ecg, **unovis_noisy_ecg}
+            joined_noisy_ecg_labels = {**mit_noisy_ecg_labels, **unovis_noisy_ecg_labels}
+            joined_reference_ecg = {**mit_reference_ecg, **unovis_reference_ecg}
+
+            test_keys = random.sample(joined_noisy_ecg.keys(), round(len(joined_noisy_ecg.keys())*self.test_size))
+
+            self.X_test_unovis = np.zeros(120)
+            self.X_test_mit = np.zeros(120)
+            self.y_test_unovis = np.zeros(1)
+            self.y_test_mit = np.zeros(1)
+            self.X_train = np.zeros(120)
+            self.y_train = np.zeros(1)
+            self.X_test_reference_unovis = np.zeros(120)
+            self.X_test_reference_mit = np.zeros(120)
+            self.X_train_reference = np.zeros(120)
+
+            for key in joined_noisy_ecg.keys():
+                if key in test_keys and key > 1000:
+                    self.X_test_mit = np.vstack((self.X_test_mit, joined_noisy_ecg[key]))
+                   # self.y_test_mit = np.concatenate((self.y_test_mit,joined_noisy_ecg_labels[key]))
+                    self.X_test_reference_mit = np.vstack((self.X_test_reference_mit, joined_reference_ecg[key]))
+                elif key in test_keys and key < 1000:
+                    self.X_test_unovis = np.vstack((self.X_test_unovis, joined_noisy_ecg[key]))
+                   # self.y_test_unovis = np.concatenate((self.y_test_unovis,joined_noisy_ecg_labels[key]))
+                    self.X_test_reference_unovis = np.vstack((self.X_test_reference_unovis, joined_reference_ecg[key]))
+                
+                else:
+                    self.X_train = np.vstack((self.X_train, joined_noisy_ecg[key]))
+                   # self.y_train = np.concatenate((self.y_train, joined_noisy_ecg_labels[key]))
+                    self.X_train_reference = np.vstack((self.X_train_reference, joined_reference_ecg[key]))
+
+            self.X_test_unovis = torch.Tensor(np.delete(self.X_test_unovis, (0),axis=0 )) 
+            self.X_test_mit = torch.Tensor(np.delete(self.X_test_mit, (0),axis=0 )) 
+
+          #  self.y_test_unovis = torch.Tensor(np.delete(self.y_test_unovis, (0),axis=0 )) 
+          #  self.y_test_mit = torch.Tensor(np.delete(self.y_test_mit, (0),axis=0 )) 
+
+            self.X_test_reference_unovis = torch.Tensor(np.delete(self.X_test_reference_unovis, (0),axis=0 )) 
+            self.X_test_reference_mit = torch.Tensor(np.delete(self.X_test_reference_mit, (0),axis=0 )) 
+
+            self.X_train = torch.Tensor(np.delete(self.X_train, (0),axis=0 ) )
+          #  self.y_train = torch.Tensor(np.delete(self.y_train, (0),axis=0 ) )
+            self.X_train_reference = torch.Tensor(np.delete(self.X_train_reference, (0),axis=0 ) )    
+
+            torch.save(self.X_test_mit, "tensors/new-1002/um_test_X_mit.pt")
+            torch.save(self.X_test_unovis, "tensors/new-1002/um_test_X_unovis.pt")
+
+          #  torch.save(self.y_test_mit, "tensors/patient_based/separate_datasets/um_test_y_mit.pt")
+          #  torch.save(self.y_test_unovis, "tensors/patient_based/separate_datasets/um_test_y_unovis.pt")
+
+            torch.save(self.X_test_reference_mit, "tensors/new-1002/um_reference_test_X_mit.pt")
+            torch.save(self.X_test_reference_unovis, "tensors/new-1002/um_reference_test_X_unovis.pt")
+
+            torch.save(self.X_train, "tensors/new-1002/um_train_X.pt")  
+          #  torch.save(self.y_train, "tensors/patient_based/separate_datasets/um_train_y.pt")  
+            torch.save(self.X_train_reference, "tensors/new-1002/um_reference_train_X.pt")
+        else:
+            pass
 
 if __name__ =="__main__":
     loader = LoadDataFromDicts()
-    loader.load()
-    loader.SaveToTensors()
-    print(loader.X_test.shape, loader.y_test.shape, loader.X_train.shape, loader.y_train.shape)
+   # loader.load()
+   # loader.SaveToTensors()
+    loader.LoadSaveWithDatasetInfo()
+    print(loader.X_test_mit.shape, loader.X_test_reference_mit.shape, loader.X_test_unovis.shape, loader.X_test_reference_unovis.shape, loader.X_train.shape, loader.X_train_reference.shape)
 
 

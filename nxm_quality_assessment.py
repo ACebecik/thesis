@@ -141,10 +141,8 @@ if __name__ == "__main__":
     snap_counter = 0
     for i in zero_idx_list:
         if snap_counter == max_snaps:
-            break
-        try:
-            compensator.getRandomSnapshot(random_seed=i)
-            snap_counter = snap_counter + 1
-        except:
-            print(f"Snapshot failed for seed {i} ")
+            break        
+        compensator.getRandomSnapshot(random_seed=i)
+        snap_counter = snap_counter + 1
+
         

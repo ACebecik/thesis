@@ -85,6 +85,8 @@ class CompensationTrainer():
         print("[INFO] Starting training...")
         startTime = time.time()
 
+        scaler = MinMaxScaler()
+
         # loop over epochs
         for e in tqdm(range(0, self.no_epochs)):
 
@@ -145,6 +147,7 @@ class CompensationTrainer():
                     pred = self.model(X_batch)
                     if self.model_name == "drdnn":
                         pred = torch.unsqueeze(pred,dim=1)
+                    
                     lossVal = self.lossFn(pred, y_batch)
 
                     totalValLoss = totalValLoss + lossVal
@@ -167,21 +170,30 @@ class CompensationTrainer():
 
     def getRandomSnapshot(self,random_seed):
         
-       X_snap = torch.unsqueeze(self.X_test[random_seed, :] , dim=0).to(device=self.device) 
-       y_snap = torch.unsqueeze(self.y_test[random_seed, :] , dim=0).to(device=self.device)
+        X_snap = torch.unsqueeze(self.X_test[random_seed, :] , dim=0).to(device=self.device) 
+        y_snap = torch.unsqueeze(self.y_test[random_seed, :] , dim=0).to(device=self.device)
+            
+        X_snap = torch.unsqueeze(X_snap , dim=0) 
+        y_snap = torch.unsqueeze(y_snap , dim=0)
+
+        y_pred_snap = self.model(X_snap)
+        y_pred_snap = torch.squeeze(y_pred_snap)
+        y_pred_snap = torch.unsqueeze(y_pred_snap, dim=1)
         
-       X_snap = torch.unsqueeze(X_snap , dim=0) 
-       y_snap = torch.unsqueeze(y_snap , dim=0)
+        scaler = MinMaxScaler()
+        y_pred_snap = scaler.fit_transform(y_pred_snap.cpu().detach().numpy())
 
-       y_pred_snap = self.model(X_snap)
+        X_snap = torch.squeeze(X_snap).cpu().numpy()
+        y_snap = torch.squeeze(y_snap).cpu().numpy()
+        
 
-       X_snap = torch.squeeze(X_snap).cpu().numpy()
-       y_snap = torch.squeeze(y_snap).cpu().numpy()
-       y_pred_snap = torch.squeeze(y_pred_snap).cpu().detach().numpy()
+        plt.plot(y_pred_snap, label="compensated signal")
+        plt.plot(X_snap, label="noisy signal" )
+        plt.plot(y_snap, label="reference clean signal" )
+        plt.legend()
+        plt.savefig(f"snaps/snapshot of one segment seed{random_seed}snap.png")
+        plt.clf()
 
-       plt.plot(y_pred_snap, label="compensated signal")
-       plt.plot(X_snap, label="noisy signal" )
-       plt.plot(y_snap, label="reference clean signal" )
-       plt.legend()
-       plt.savefig(f"snaps/snapshot of one segment seed{random_seed}snap.png")
-       plt.clf()
+
+if __name__ == "__main__":
+    pass

@@ -21,7 +21,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
-from load_data_from_tensors import LoadDataFromTensor
+from OLD_load_data_from_tensors import LoadDataFromTensor
 from train import ClassificationTrainer
 from plotter import Plotter
 from train_compensator import CompensationTrainer
@@ -40,30 +40,17 @@ if __name__ == "__main__":
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    """
-    # load the data from saved tensors
-        tensorLoader = LoadDataFromDicts(chosen_dataset=CHOSEN_DATASET, 
-                                        random_seed=RANDOM_SEED,
-                                        test_size=TEST_SIZE)
-        tensorLoader.load()
-    
-        classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
-                                        X_train=tensorLoader.X_train,
-                                        y_train=tensorLoader.y_train,
-                                        X_test=tensorLoader.X_test,
-                                        y_test=tensorLoader.y_test
-                                        )"""
 
-    X_train = torch.load("tensors/new-1002/um_train_X.pt")
-   # X_test = torch.load("tensors/new-1002/um_test_X.pt")
-    X_train_reference = torch.load("tensors/new-1002/um_reference_train_X.pt")
-   # X_test_reference = torch.load("tensors/new-1002/um_reference_test_X.pt")
+    X_train = torch.load("tensors/um/um_train_X.pt")
+    X_test = torch.load("tensors/um/um_test_X.pt")
+    X_train_reference = torch.load("tensors/um/um_reference_train_X.pt")
+    X_test_reference = torch.load("tensors/um/um_reference_test_X.pt")
 
-   # y_train = torch.load("tensors/new-1002/um_train_y.pt")
-   #  y_test = torch.load("tensors/new-1002/um_test_y.pt")
+    y_train = torch.load("tensors/um/um_train_y.pt")
+    y_test = torch.load("tensors/um/um_test_y.pt")
 
     
-    """    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+    classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
                                         X_train=X_train,
                                         y_train=y_train,
                                         X_test=X_test,
@@ -71,16 +58,15 @@ if __name__ == "__main__":
                                         X_test_reference=X_test_reference
                                         )
         
-        classifier.train()
-        results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
-        best_confusion_matrix = classifier.getBestConfusionMatrix()"""
+    classifier.train()
+    results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+    best_confusion_matrix = classifier.getBestConfusionMatrix()
 
-    """plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
+    plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
     plotter.plot_accuracy(results_train_acc,results_val_acc)
     plotter.plot_loss(results_train_loss, results_val_loss)
-    plotter.plot_confusion_matrix(best_confusion_matrix)"""
+    plotter.plot_confusion_matrix(best_confusion_matrix)
 
-   #  compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
     
     """    compensator = CompensationTrainer(lr=INIT_LR,
                                         batch_size=BATCH_SIZE,
@@ -91,11 +77,11 @@ if __name__ == "__main__":
                                         X_test=X_test,
                                         y_test=X_test_reference)"""
         
-    X_test_reference_mit = torch.load("tensors/new-1002/um_reference_test_X_mit.pt")
-    X_test_mit = torch.load("tensors/new-1002/um_test_X_mit.pt")
+    X_test_reference_mit = torch.load("tensors/um/um_reference_test_X_mit.pt")
+    X_test_mit = torch.load("tensors/um/um_test_X_mit.pt")
 
-    X_test_unovis = torch.load("tensors/new-1002/um_test_X_unovis.pt")
-    X_test_reference_unovis = torch.load("tensors/new-1002/um_reference_test_X_unovis.pt")
+    X_test_unovis = torch.load("tensors/um/um_test_X_unovis.pt")
+    X_test_reference_unovis = torch.load("tensors/um/um_reference_test_X_unovis.pt")
     
     compensator = CompensationTrainer(lr=INIT_LR,
                                         batch_size=BATCH_SIZE,
@@ -132,9 +118,11 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.title('Loss')
     plt.legend()
-    plt.savefig(f"plots/compensation/new-1002-um_test_LOSS_separate.png")
+    plt.savefig(f"plots/new-1002-um_test_LOSS_separate.png")
     plt.clf()
-    
+
+    # compensation_X_test, compensation_X_test_references = classifier.getCompensationSegments()
+  
    # zero_idx_list = classifier.zero_indices
     zero_idx_list = np.arange(20,600,10)
     max_snaps = 50

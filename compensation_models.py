@@ -27,7 +27,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
-from load_data_from_tensors import LoadDataFromTensor
+from OLD_load_data_from_tensors import LoadDataFromTensor
 from train import ClassificationTrainer
 from plotter import Plotter
 

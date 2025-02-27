@@ -5,3 +5,4 @@ tensors
 __pycache__
 dictionaries
 snaps
+wandb

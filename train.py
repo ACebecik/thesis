@@ -26,6 +26,8 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
 from OLD_load_data_from_tensors import LoadDataFromTensor
+import wandb
+
 
 
 class ClassificationTrainer():
@@ -131,6 +133,9 @@ class ClassificationTrainer():
             if e % 10 == 0:
                 print(str.format("Epoch: {}, Avg training loss: {:.6f}, Avg Train Acc: {:.6f}", e+1, avgTrainLoss, avgTrainAcc))
 
+            wandb.log({"epoch": e, "classification_train_loss": avgTrainLoss, "classification_train_acc": avgTrainAcc})
+
+
             # update our training history
             self.results_train_acc.append(avgTrainAcc)
             self.results_train_loss.append(avgTrainLoss)
@@ -184,6 +189,9 @@ class ClassificationTrainer():
             avgValLoss = float(totalValLoss /self.no_testSteps)
             if e % 10 == 0:
                 print(str.format("Epoch: {}, Avg Validation loss: {:.6f}, Avg Val Acc: {:.6f}", e+1, avgValLoss, avgValAcc))
+
+            wandb.log({"epoch": e, "classification_test_loss": avgValLoss, "classification_test_acc": avgValAcc})
+
 
             # update our training history
             self.results_val_acc.append(avgValAcc)

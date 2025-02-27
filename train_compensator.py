@@ -29,6 +29,7 @@ from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
 from OLD_load_data_from_tensors import LoadDataFromTensor
 from compensation_models import DRDNN, FCN_DAE
+import wandb
 
 
 class CompensationTrainer():
@@ -125,6 +126,9 @@ class CompensationTrainer():
             avgTrainLoss = float(totalTrainLoss /self.no_trainSteps)
             if e % 10 == 0:
                 print(str.format("Epoch: {}, Avg training loss: {:.6f}", e+1, avgTrainLoss))
+            
+            wandb.log({"epoch": e, "compensation_train_loss": avgTrainLoss})
+
 
             # update our training history
             self.results_train_loss.append(avgTrainLoss)
@@ -156,6 +160,8 @@ class CompensationTrainer():
             avgValLoss = float(totalValLoss /self.no_testSteps)
             if e % 10 == 0:
                 print(str.format("Epoch: {}, Avg Validation loss: {:.6f}", e+1, avgValLoss))
+            wandb.log({"epoch": e, "compensation_test_loss": avgValLoss})
+
 
             # update our training history
             self.results_val_loss.append(avgValLoss)

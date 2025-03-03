@@ -34,13 +34,12 @@ import pprint
 if __name__ == "__main__":
 
     wandb.login()
-    wandb.init()
 
     # define training hyperparameters as a config dict
     run_config = dict(
         INIT_LR = 5e-4,
         BATCH_SIZE = 4096,
-        EPOCHS = 10,
+        EPOCHS = 40,
         CHOSEN_DATASET = "um",
         RANDOM_SEED = 31,
         TEST_SIZE = 0.2,
@@ -64,31 +63,18 @@ if __name__ == "__main__":
     parameters_dict = {
         'COMPENSATOR_ARCH': {
             'values': ['fcn-dae', 'drdnn']
-            }
-        }
+            },
+        'INIT_LR': {
+            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
+            },
+        "BATCH_SIZE":{
+            "values" :[1024, 2048, 4096] 
+        }     
+    } 
 
     sweep_config['parameters'] = parameters_dict
 
-    parameters_dict.update({
-    'INIT_LR': {
-        # a flat distribution between 0 and 0.1
-        'distribution': 'uniform',
-        'min': 0.00001,
-        'max': 0.001
-      },
-    'BATCH_SIZE': {
-        # integers between 256 and 4096
-        # with evenly-distributed logarithms 
-        'distribution': 'q_log_uniform_values',
-        'q': 8,
-        'min': 256,
-        'max': 4096,
-      }
-    })
-
     pprint.pprint(sweep_config)
-
-    sweep_id = wandb.sweep(sweep_config, project="pytorch-sweeps-demo")
 
 
     # set the device we will be using to train the model
@@ -101,23 +87,21 @@ if __name__ == "__main__":
 
     y_train = torch.load("tensors/um/um_train_y.pt")
     y_test = torch.load("tensors/um/um_test_y.pt")
-
-    
-    classifier = ClassificationTrainer(lr=run_config["INIT_LR"], batch_size=run_config["BATCH_SIZE"], 
-                                       no_epochs=run_config["EPOCHS"] ,
-                                        X_train=X_train,
-                                        y_train=y_train,
-                                        X_test=X_test,
-                                        y_test=y_test,
-                                        X_test_reference=X_test_reference
-                                        )
+    """
         
-    classifier.train()
-    results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
-    best_confusion_matrix = classifier.getBestConfusionMatrix()
-
-    wandb.agent(sweep_id, classifier.train(), count=5)
-
+        classifier = ClassificationTrainer(lr=run_config["INIT_LR"], batch_size=run_config["BATCH_SIZE"], 
+                                        no_epochs=run_config["EPOCHS"] ,
+                                            X_train=X_train,
+                                            y_train=y_train,
+                                            X_test=X_test,
+                                            y_test=y_test,
+                                            X_test_reference=X_test_reference
+                                            )
+            
+        classifier.train()
+        results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+        best_confusion_matrix = classifier.getBestConfusionMatrix()
+"""
 
     """    
         plotter = Plotter(dataset=run_config["CHOSEN_DATASET"] , seed=run_config["RANDOM_SEED"] , 
@@ -151,10 +135,12 @@ if __name__ == "__main__":
                                         X_test=X_test,
                                         y_test=X_test_reference)
 
-    compensator.train()
+   # compensator.train()
 
 
-    wandb.agent(sweep_id, compensator.train(), count=5)
+    sweep_id = wandb.sweep(sweep_config, project="pytorch-sweeps-demo-new")
+
+    wandb.agent(sweep_id, compensator.train, count=7)
     
     """
     compensator = CompensationTrainer(lr=run_config["INIT_LR"],

@@ -123,8 +123,59 @@ class FCN_DAE(nn.Module):
         return x
 
 
+
+class FCN_DAE_skip(nn.Module):
+    def __init__(self, in_channels=1):
+        super(FCN_DAE_skip, self).__init__()
+        
+        self.conv1 = nn.Conv1d(in_channels=in_channels, out_channels=20, kernel_size=16, stride=2, padding=7)
+        self.conv2 = nn.Conv1d(in_channels=20, out_channels=40, kernel_size=16, stride=2, padding=7)
+        self.conv3 = nn.Conv1d(in_channels=40, out_channels=80, kernel_size=16, stride=2, padding=7)
+        self.conv4 = nn.Conv1d(in_channels=80, out_channels=160, kernel_size=8, stride=1, padding=1)
+
+        self.relu = nn.ReLU()
+       # self.batchnorm = nn.BatchNorm1d()
+
+        self.deconv1 = nn.ConvTranspose1d(in_channels=160, out_channels=80, kernel_size=8, stride=1, padding=1)
+        self.deconv2 = nn.ConvTranspose1d(in_channels=80, out_channels=40, kernel_size=16, stride=2, padding=7)
+        self.deconv3 = nn.ConvTranspose1d(in_channels=40, out_channels=20, kernel_size=16, stride=2, padding=7)
+        self.deconv4 = nn.ConvTranspose1d(in_channels=20, out_channels=1, kernel_size=16, stride=2, padding=7)
+        
+    def forward(self,x):
+
+        x1 = self.conv1(x)
+        x1 = self.relu(x1)
+
+        x2 = self.conv2(x1)
+        x2 = self.relu(x2)
+
+        x3 = self.conv3(x2)
+        x3 = self.relu(x3)
+
+        x4 = self.conv4(x3)
+        x4 = self.relu(x4)
+
+        x4 = self.deconv1(x4)
+        x5 = self.relu(x4)
+
+       # skip connect 
+        x3 = x5 + x3 
+        x3 = self.deconv2(x3)
+        x6 = self.relu(x3)
+
+       # skip connect 
+        x2 = x2 + x6
+        x2 = self.deconv3(x2)
+        x7 = self.relu(x2)
+
+       # skip connect 
+        x1 = x1 + x7
+        x = self.deconv4(x1)
+
+        return x
+
 if __name__ == "__main__":
-    model_temp = FCN_DAE()
+    model_temp = FCN_DAE_skip()
     X = torch.Tensor (np.ones((1024,1,120)))
     model_temp.forward(X)
 

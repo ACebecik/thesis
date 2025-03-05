@@ -62,13 +62,17 @@ if __name__ == "__main__":
 
     parameters_dict = {
         'COMPENSATOR_ARCH': {
-            'values': ['fcn-dae', 'drdnn']
+           # 'values': ['fcn-dae', 'drdnn']
+           'values': ['fcn-dae-skip']
             },
         'INIT_LR': {
-            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
+           # "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
+            "values" :[0.001, 0.0001] 
+
             },
         "BATCH_SIZE":{
-            "values" :[1024, 2048, 4096] 
+           # "values" :[1024, 2048, 4096] 
+           "values" :[4096] 
         }     
     } 
 
@@ -138,9 +142,9 @@ if __name__ == "__main__":
    # compensator.train()
 
 
-    sweep_id = wandb.sweep(sweep_config, project="pytorch-sweeps-demo-new")
+    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-only-skip")
 
-    wandb.agent(sweep_id, compensator.train, count=7)
+    wandb.agent(sweep_id, compensator.train, count=2)
     
     """
     compensator = CompensationTrainer(lr=run_config["INIT_LR"],

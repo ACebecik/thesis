@@ -28,7 +28,7 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
 from classification_models import NoiseDetector
 from OLD_load_data_from_tensors import LoadDataFromTensor
-from compensation_models import DRDNN, FCN_DAE
+from compensation_models import DRDNN, FCN_DAE, FCN_DAE_skip
 import wandb
 
 
@@ -77,6 +77,10 @@ class CompensationTrainer():
             
             elif self.model_name == "fcn-dae":
                 self.model = FCN_DAE().to(device=self.device)
+
+            elif self.model_name == "fcn-dae-skip":
+                self.model = FCN_DAE_skip().to(device=self.device)
+                
         # more models can be added here for extensions 
 
             self.opt = optim.Adam(self.model.parameters(), lr=self.lr)

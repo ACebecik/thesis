@@ -140,37 +140,94 @@ class FCN_DAE_skip(nn.Module):
         self.deconv2 = nn.ConvTranspose1d(in_channels=80, out_channels=40, kernel_size=16, stride=2, padding=7)
         self.deconv3 = nn.ConvTranspose1d(in_channels=40, out_channels=20, kernel_size=16, stride=2, padding=7)
         self.deconv4 = nn.ConvTranspose1d(in_channels=20, out_channels=1, kernel_size=16, stride=2, padding=7)
+    
+        self.maxpool20 = nn.MaxPool1d(kernel_size=20)
+        self.maxpool40 = nn.MaxPool1d(kernel_size=40)
+        self.maxpool80 = nn.MaxPool1d(kernel_size=80)
+
+        self.avgpool20 = nn.AvgPool1d(kernel_size=20)
+        self.avgpool40 = nn.AvgPool1d(kernel_size=40)
+        self.avgpool80 = nn.AvgPool1d(kernel_size=80)
+
+    def dual_attention(self, x, layer_no):
+    
+        if layer_no == 80:
+            x_maxpooled = self.maxpool80(x.permute(0,2,1)).permute(0,2,1)
+            x_avgpooled = self.avgpool80(x.permute(0,2,1)).permute(0,2,1)
+
+        elif layer_no == 40:
+            x_maxpooled = self.maxpool40(x.permute(0,2,1)).permute(0,2,1)
+            x_avgpooled = self.avgpool40(x.permute(0,2,1)).permute(0,2,1)
+
+        else:
+            x_maxpooled = self.maxpool20(x.permute(0,2,1)).permute(0,2,1)
+            x_avgpooled = self.avgpool20(x.permute(0,2,1)).permute(0,2,1)
+
+        print(x_maxpooled.shape)
+
+        linear1 = nn.Linear(in_features=1, out_features=layer_no)
+        linear2 = nn.Linear(in_features=layer_no, out_features=layer_no)
+        x_maxpooled = linear1(x_maxpooled)
+        x_maxpooled = linear2(x_maxpooled)
+        print(x_maxpooled.shape)
+
+        linear3 = nn.Linear(in_features=1, out_features=layer_no)
+        linear4 = nn.Linear(in_features=layer_no, out_features=layer_no)
+        x_avgpooled = linear3(x_avgpooled)
+        x_avgpooled = linear4(x_avgpooled)
         
+        x = x_avgpooled + x_maxpooled
+        sigmoid1 = nn.Sigmoid()
+        x = sigmoid1(x)
+
+        return x
+
     def forward(self,x):
 
         x1 = self.conv1(x)
         x1 = self.relu(x1)
+        print(x1.shape)
 
         x2 = self.conv2(x1)
         x2 = self.relu(x2)
+        print(x2.shape)
 
         x3 = self.conv3(x2)
         x3 = self.relu(x3)
+        print(x3.shape)
 
         x4 = self.conv4(x3)
         x4 = self.relu(x4)
+        print(x4.shape)
 
         x4 = self.deconv1(x4)
         x5 = self.relu(x4)
+        print(x5.shape)
+
+       # dual attention
+        x5 = self.dual_attention(x5, 80) 
+        print(x5.shape)
 
        # skip connect 
         x3 = x5 + x3 
         x3 = self.deconv2(x3)
         x6 = self.relu(x3)
+        print(x6.shape)
+
+        x6 = self.dual_attention(x6, 40)
 
        # skip connect 
         x2 = x2 + x6
         x2 = self.deconv3(x2)
         x7 = self.relu(x2)
+        print(x7.shape)
+
+        x7 = self.dual_attention(x7, 20)
 
        # skip connect 
         x1 = x1 + x7
         x = self.deconv4(x1)
+        print(x.shape)
 
         return x
 

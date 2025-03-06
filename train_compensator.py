@@ -80,7 +80,7 @@ class CompensationTrainer():
 
             elif self.model_name == "fcn-dae-skip":
                 self.model = FCN_DAE_skip().to(device=self.device)
-                
+
         # more models can be added here for extensions 
 
             self.opt = optim.Adam(self.model.parameters(), lr=self.lr)
@@ -142,7 +142,7 @@ class CompensationTrainer():
 
                 # update our training history
                 self.results_train_loss.append(avgTrainLoss)
-
+                
                 # EVAL
                 # switch off autograd for evaluation
                 with torch.no_grad():
@@ -175,7 +175,7 @@ class CompensationTrainer():
 
                 # update our training history
                 self.results_val_loss.append(avgValLoss)
-        
+          
             # finish measuring how long training took
             endTime = time.time()
             print("[INFO] total time taken to train the model: {:.2f}s".format(endTime - startTime))

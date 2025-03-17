@@ -42,7 +42,7 @@ class unovisReader():
         cecg4 = np.zeros(1)
 
         # read the data from the records
-        exclusion_set =[62, 66, 70, 79, 83, 86, 94, 99, 103, 121, 122, 129, 146, 147, 159, 174, 179, 181, 187, 189, 194] 
+        exclusion_set =[70, 83, 121, 159, 179, 181, 194] 
         for record_no in tqdm(range (51, 200)):
             if record_no in exclusion_set:
                 continue
@@ -59,7 +59,7 @@ class unovisReader():
             print(f"Reading record number:{record_no}")
 
             #band pass filtering with butterworth 
-            fs = 360.0
+            fs = float(unovis_data[record_no].fs)
             lowcut = 0.5
             highcut = 40
             refecg = butter_bandpass_filter(refecg, lowcut, highcut, fs, order=2)
@@ -69,7 +69,7 @@ class unovisReader():
             cecg4 = butter_bandpass_filter(cecg4, lowcut, highcut, fs, order=2)
 
             # create segments, find peaks and classify
-            fs = 360
+            
             i = 0
             WINDOW_SIZE = 120
 
@@ -96,7 +96,7 @@ class unovisReader():
                 cecg3_segment = scaler.fit_transform(cecg3_segment).squeeze()
                 cecg4_segment = scaler.fit_transform(cecg4_segment).squeeze()
 
-                ref_peaks = wfdb.processing.xqrs_detect(ref_segment, fs=360, verbose=False)
+                ref_peaks = wfdb.processing.xqrs_detect(ref_segment, fs=fs, verbose=False)
 
                # If there is no peaks in reference ecg, skip that segment
                 
@@ -106,11 +106,11 @@ class unovisReader():
                # Set the label flags for each channel
                # If there is a correctly identified peak, add that segment and skip to the next segment 
                 
-                cecg1_peaks = wfdb.processing.xqrs_detect(cecg1_segment, fs=360, verbose=False)
+                cecg1_peaks = wfdb.processing.xqrs_detect(cecg1_segment, fs=fs, verbose=False)
 
                 if not cecg1_peaks.size > 0:
                     cecg1_labels = 0
-                elif ref_peaks[0] < cecg1_peaks[0] + 5 or ref_peaks[0] > cecg1_peaks[0] - 5 :
+                elif (ref_peaks[0] < cecg1_peaks[0] + 5 or ref_peaks[0] > cecg1_peaks[0] - 5) and cecg1_peaks.size == ref_peaks.size :
                     cecg1_labels = 1
                     noisy_segments_per_record.append(cecg1_segment)
                     labels_per_record.append(1)
@@ -120,11 +120,11 @@ class unovisReader():
                 else:
                     cecg1_labels = 0
 
-                cecg2_peaks = wfdb.processing.xqrs_detect(cecg2_segment, fs=360, verbose=False)
+                cecg2_peaks = wfdb.processing.xqrs_detect(cecg2_segment, fs=fs, verbose=False)
                 
                 if not cecg2_peaks.size > 0:
                     cecg2_labels = 0
-                elif ref_peaks[0] < cecg2_peaks[0] + 5 or ref_peaks[0] > cecg2_peaks[0] - 5 :
+                elif (ref_peaks[0] < cecg2_peaks[0] + 5 or ref_peaks[0] > cecg2_peaks[0] - 5) and cecg2_peaks.size == ref_peaks.size:
                     cecg2_labels = 1
                     noisy_segments_per_record.append(cecg2_segment)
                     labels_per_record.append(1)
@@ -134,11 +134,11 @@ class unovisReader():
                 else:
                     cecg2_labels = 0
 
-                cecg3_peaks = wfdb.processing.xqrs_detect(cecg3_segment, fs=360, verbose=False)
+                cecg3_peaks = wfdb.processing.xqrs_detect(cecg3_segment, fs=fs, verbose=False)
             
                 if not cecg3_peaks.size > 0:
                     cecg3_labels = 0
-                elif ref_peaks[0] < cecg3_peaks[0] + 5 or ref_peaks[0] > cecg3_peaks[0] - 5 :
+                elif (ref_peaks[0] < cecg3_peaks[0] + 5 or ref_peaks[0] > cecg3_peaks[0] - 5) and cecg3_peaks.size == ref_peaks.size :
                     noisy_segments_per_record.append(cecg3_segment)
                     labels_per_record.append(1)
                     cecg3_labels = 1
@@ -148,11 +148,11 @@ class unovisReader():
                 else:
                     cecg3_labels = 0
 
-                cecg4_peaks = wfdb.processing.xqrs_detect(cecg4_segment, fs=360, verbose=False)
+                cecg4_peaks = wfdb.processing.xqrs_detect(cecg4_segment, fs=fs, verbose=False)
                 
                 if not cecg4_peaks.size > 0:
                     cecg4_labels = 0               
-                elif ref_peaks[0] < cecg4_peaks[0] + 5 or ref_peaks[0] > cecg4_peaks[0] - 5 :
+                elif (ref_peaks[0] < cecg4_peaks[0] + 5 or ref_peaks[0] > cecg4_peaks[0] - 5) and cecg4_peaks.size == ref_peaks.size :
                     noisy_segments_per_record.append(cecg4_segment)
                     labels_per_record.append(1)
                     cecg4_labels = 1
@@ -181,13 +181,13 @@ class unovisReader():
             
 
     def saveData(self):
-        with open("dictionaries/new-1002/unovis_reference_ecg_by_patients.pkl", "wb") as f:
+        with open("dictionaries/final_dicts_1703/unovis_reference_ecg_by_patients.pkl", "wb") as f:
             pickle.dump(self.reference_data, f)
         
-        with open("dictionaries/new-1002/unovis_cecg_by_patients.pkl", "wb") as f:
+        with open("dictionaries/final_dicts_1703/unovis_cecg_by_patients.pkl", "wb") as f:
             pickle.dump(self.data_to_use, f)
 
-        with open("dictionaries/new-1002/unovis_cecg_labels_by_patients.pkl", "wb") as f:
+        with open("dictionaries/final_dicts_1703/unovis_cecg_labels_by_patients.pkl", "wb") as f:
             pickle.dump(self.labels_to_use, f)
 
 

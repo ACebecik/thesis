@@ -43,7 +43,7 @@ if __name__ == "__main__":
         CHOSEN_DATASET = "um",
         RANDOM_SEED = 31,
         TEST_SIZE = 0.2,
-        COMPENSATOR_ARCH = "fcn-dae-skip"
+        COMPENSATOR_ARCH = "fcn-dae"
     )
    # wandb.init(project="test_run")
    # wandb.config = run_config
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     } 
 
     metric ={
-        "name": "compensation_test_loss",
+        "name": "compensation_val_loss",
         "goal": "minimize"
     } 
 
@@ -62,14 +62,15 @@ if __name__ == "__main__":
 
     parameters_dict = {
         'COMPENSATOR_ARCH': {
-            'values': ['fcn-dae-skip']
+            'values': ['fcn-dae']
                 },
         'INIT_LR': {
-            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
+           # "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
+            "values" :[0.001] 
 
             },
         "BATCH_SIZE":{
-            "values" :[1024, 2048, 4096, 8192] 
+            "values" :[4096] 
         }     
     } 
 
@@ -81,13 +82,19 @@ if __name__ == "__main__":
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    X_train = torch.load("tensors/um/um_train_X.pt")
-    X_test = torch.load("tensors/um/um_test_X.pt")
-    X_train_reference = torch.load("tensors/um/um_reference_train_X.pt")
-    X_test_reference = torch.load("tensors/um/um_reference_test_X.pt")
+    X_train = torch.load("tensors/final_tensors_1703/um_train_X.pt")
+    X_test = torch.load("tensors/final_tensors_1703/um_test_X.pt")
+    X_train_reference = torch.load("tensors/final_tensors_1703/um_reference_train_X.pt")
+    X_test_reference = torch.load("tensors/final_tensors_1703/um_reference_test_X.pt")
 
-    y_train = torch.load("tensors/um/um_train_y.pt")
-    y_test = torch.load("tensors/um/um_test_y.pt")
+    y_train = torch.load("tensors/final_tensors_1703/um_train_y.pt")
+    y_test = torch.load("tensors/final_tensors_1703/um_test_y.pt")
+
+    X_validation = torch.load("tensors/final_tensors_1703/um_validation_X.pt")
+    y_validation = torch.load("tensors/final_tensors_1703/um_validation_y.pt")
+    X_validation_reference = torch.load("tensors/final_tensors_1703/um_reference_validation_X.pt")
+
+
     """
         
         classifier = ClassificationTrainer(lr=run_config["INIT_LR"], batch_size=run_config["BATCH_SIZE"], 
@@ -111,21 +118,12 @@ if __name__ == "__main__":
         plotter.plot_loss(results_train_loss, results_val_loss)
         plotter.plot_confusion_matrix(best_confusion_matrix)"""
 
-    
-    """    compensator = CompensationTrainer(lr=INIT_LR,
-                                        batch_size=BATCH_SIZE,
-                                        no_epochs=EPOCHS,
-                                        model_arch=COMPENSATOR_ARCH,
-                                        X_train=X_train,
-                                        y_train=X_train_reference, 
-                                        X_test=X_test,
-                                        y_test=X_test_reference)"""
-        
-    X_test_reference_mit = torch.load("tensors/um/um_reference_test_X_mit.pt")
-    X_test_mit = torch.load("tensors/um/um_test_X_mit.pt")
 
-    X_test_unovis = torch.load("tensors/um/um_test_X_unovis.pt")
-    X_test_reference_unovis = torch.load("tensors/um/um_reference_test_X_unovis.pt")
+    X_test_reference_mit = torch.load("tensors/final_tensors_1703/mit_reference_test_X.pt")
+    X_test_mit = torch.load("tensors/final_tensors_1703/mit_test_X.pt")
+
+    X_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_X.pt")
+    X_test_reference_unovis = torch.load("tensors/final_tensors_1703/unovis_reference_test_X.pt")
     
     compensator = CompensationTrainer(lr=run_config["INIT_LR"],
                                         batch_size=run_config["BATCH_SIZE"],
@@ -133,57 +131,29 @@ if __name__ == "__main__":
                                         model_arch=run_config["COMPENSATOR_ARCH"] ,
                                         X_train=X_train,
                                         y_train=X_train_reference, 
-                                        X_test=X_test,
-                                        y_test=X_test_reference)
+                                        X_test=X_validation,
+                                        y_test=X_validation_reference)
 
    # compensator.train()
+   # comp_results_train_loss, comp_results_val_loss = compensator.getRawResults()
 
 
-    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-attention-final-run")
+    sweep_id = wandb.sweep(sweep_config, project="new-data-run")
 
-    wandb.agent(sweep_id, compensator.train, count=15)
-    
-    """
-    compensator = CompensationTrainer(lr=run_config["INIT_LR"],
-                                        batch_size=run_config["BATCH_SIZE"],
-                                        no_epochs=run_config["EPOCHS"],
-                                        model_arch=run_config["COMPENSATOR_ARCH"] ,
-                                        X_train=X_train,
-                                        y_train=X_train_reference, 
-                                        X_test=X_test_mit,
-                                        y_test=X_test_reference_mit)
-
-    compensator.train()
-    
-    comp_results_train_loss_mit, comp_results_test_loss_mit = compensator.getRawResults()
-
-    
-        compensator = CompensationTrainer(lr=run_config["INIT_LR"],
-                                            batch_size=run_config["BATCH_SIZE"],
-                                            no_epochs=run_config["EPOCHS"],
-                                            model_arch=run_config["COMPENSATOR_ARCH"],
-                                            X_train=X_train,
-                                            y_train=X_train_reference, 
-                                            X_test=X_test_unovis,
-                                            y_test=X_test_reference_unovis)
-
-        compensator.train()
-        comp_results_train_loss_unovis, comp_results_test_loss_unovis = compensator.getRawResults()"""
-
-
-    """    plt.plot(comp_results_train_loss_unovis, label='Train Loss')
-        plt.plot(comp_results_test_loss_mit, label='MIT Val Loss')
-        plt.plot(comp_results_test_loss_unovis, label='UNOVIS Val Loss')
+    wandb.agent(sweep_id, compensator.train, count=1)
+            
+    """    plt.plot(comp_results_train_loss, label='Train Loss')
+        plt.plot(comp_results_val_loss, label=' Val Loss')
 
         plt.xlabel('Epochs')
         plt.ylabel("Loss")
         plt.title('Loss')
         plt.legend()
-        plt.savefig(f"plots/new-1002-um_test_LOSS_separate.png")
-        plt.clf()"""
+        plt.savefig(f"plots/newdatasetLoss.png")
+        plt.clf()
 
 
-    """    zero_idx_list = np.arange(20,600,10)
+        zero_idx_list = np.arange(20,600,10)
         max_snaps = 50
         snap_counter = 0
         for i in zero_idx_list:
@@ -192,4 +162,4 @@ if __name__ == "__main__":
             compensator.getRandomSnapshot(random_seed=i)
             snap_counter = snap_counter + 1"""
 
-        
+    

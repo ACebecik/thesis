@@ -170,7 +170,7 @@ class CompensationTrainer():
                 avgValLoss = float(totalValLoss /self.no_testSteps)
                 if e % 10 == 0:
                     print(str.format("Epoch: {}, Avg Validation loss: {:.6f}", e+1, avgValLoss))
-                wandb.log({"epoch": e, "compensation_test_loss": avgValLoss})
+                wandb.log({"epoch": e, "compensation_val_loss": avgValLoss})
 
 
                 # update our training history

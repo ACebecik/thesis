@@ -154,27 +154,25 @@ class FCN_DAE_skip(nn.Module):
         channel_attention = self.global_attention(x,layer_no=layer_no)
         spatial_attention = self.spatial_attention(x, layer_no=layer_no)
         temp = (x * channel_attention * spatial_attention)
-        print(temp.shape)
         return temp
 
     def global_attention(self, x, layer_no):
     
        # global max and avg poolings per the channels
-        self.adp_maxpool = nn.AdaptiveMaxPool1d(output_size=1)
-        self.adp_avgpool = nn.AdaptiveAvgPool1d(output_size=1)
+        self.adp_maxpool = nn.AdaptiveMaxPool1d(output_size=1).to(torch.device("cuda:0"))
+        self.adp_avgpool = nn.AdaptiveAvgPool1d(output_size=1).to(torch.device("cuda:0"))
 
         x_avgpooled = self.adp_avgpool(x.permute(0,2,1))
         x_maxpooled = self.adp_maxpool(x.permute(0,2,1))
 
-       # skipped the fcn after GMP and GAP 
-        self.linear1 = nn.Linear(in_features=1, out_features=layer_no)
+        self.linear1 = nn.Linear(in_features=1, out_features=layer_no).to(torch.device("cuda:0"))
         x_avgpooled = self.linear1(x_avgpooled)
 
-        self.linear2 = nn.Linear(in_features=1, out_features=layer_no)
+        self.linear2 = nn.Linear(in_features=1, out_features=layer_no).to(torch.device("cuda:0"))
         x_maxpooled = self.linear2(x_maxpooled)
 
         x = x_avgpooled + x_maxpooled
-        sigmoid1 = nn.Sigmoid()
+        sigmoid1 = nn.Sigmoid().to(torch.device("cuda:0"))
         channel_attention = sigmoid1(x.permute(0,2,1))
 
        # outputs in the same shape of x  
@@ -182,8 +180,8 @@ class FCN_DAE_skip(nn.Module):
 
     def spatial_attention(self,x,layer_no):
         
-        self.adp_avgpool_chn = nn.AdaptiveAvgPool2d(output_size=(1,1))
-        self.max_avgpool_chn = nn.AdaptiveMaxPool2d(output_size=(1,1))
+        self.adp_avgpool_chn = nn.AdaptiveAvgPool2d(output_size=(1,1)).to(torch.device("cuda:0"))
+        self.max_avgpool_chn = nn.AdaptiveMaxPool2d(output_size=(1,1)).to(torch.device("cuda:0"))
 
         x_avgpooled = self.adp_avgpool_chn(x)
         x_maxpooled = self.max_avgpool_chn(x)
@@ -194,11 +192,10 @@ class FCN_DAE_skip(nn.Module):
         temp = torch.unsqueeze(temp, dim=-1)
 
        # temp shape 1024, 2,1
-        att_conv1 = nn.Conv1d(in_channels=2, out_channels=layer_no, kernel_size=1)
+        att_conv1 = nn.Conv1d(in_channels=2, out_channels=layer_no, kernel_size=1).to(torch.device("cuda:0"))
         temp = att_conv1(temp)
-        print(temp.shape)
 
-        sigm = nn.Sigmoid()
+        sigm = nn.Sigmoid().to(torch.device("cuda:0"))
         temp = sigm(temp)
 
         return temp
@@ -207,33 +204,26 @@ class FCN_DAE_skip(nn.Module):
 
         x1 = self.conv1(x)
         x1 = self.relu(x1)
-        print(x1.shape)
 
         x2 = self.conv2(x1)
         x2 = self.relu(x2)
-        print(x2.shape)
 
         x3 = self.conv3(x2)
         x3 = self.relu(x3)
-        print(x3.shape)
 
         x4 = self.conv4(x3)
         x4 = self.relu(x4)
-        print(x4.shape)
 
         x4 = self.deconv1(x4)
         x5 = self.relu(x4)
-        print(x5.shape)
 
        # dual attention
         x5 = self.dual_attention(x5, 80) 
-        print(x5.shape)
 
        # skip connect 
         x3 = x5 + x3 
         x3 = self.deconv2(x3)
         x6 = self.relu(x3)
-        print(x6.shape)
 
         x6 = self.dual_attention(x6, 40)
 
@@ -241,14 +231,12 @@ class FCN_DAE_skip(nn.Module):
         x2 = x2 + x6
         x2 = self.deconv3(x2)
         x7 = self.relu(x2)
-        print(x7.shape)
 
         x7 = self.dual_attention(x7, 20)
 
        # skip connect 
         x1 = x1 + x7
         x = self.deconv4(x1)
-        print(x.shape)
 
         return x
 

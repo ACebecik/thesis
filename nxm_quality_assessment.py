@@ -142,7 +142,7 @@ if __name__ == "__main__":
    # compensator.train()
 
 
-    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-only-skip")
+    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-only-skip-attention")
 
     wandb.agent(sweep_id, compensator.train, count=2)
     

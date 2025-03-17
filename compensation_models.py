@@ -150,37 +150,58 @@ class FCN_DAE_skip(nn.Module):
         self.avgpool80 = nn.AvgPool1d(kernel_size=80)
 
     def dual_attention(self, x, layer_no):
-    
-        if layer_no == 80:
-            x_maxpooled = self.maxpool80(x.permute(0,2,1)).permute(0,2,1)
-            x_avgpooled = self.avgpool80(x.permute(0,2,1)).permute(0,2,1)
-
-        elif layer_no == 40:
-            x_maxpooled = self.maxpool40(x.permute(0,2,1)).permute(0,2,1)
-            x_avgpooled = self.avgpool40(x.permute(0,2,1)).permute(0,2,1)
-
-        else:
-            x_maxpooled = self.maxpool20(x.permute(0,2,1)).permute(0,2,1)
-            x_avgpooled = self.avgpool20(x.permute(0,2,1)).permute(0,2,1)
-
-        print(x_maxpooled.shape)
-
-        linear1 = nn.Linear(in_features=1, out_features=layer_no)
-        linear2 = nn.Linear(in_features=layer_no, out_features=layer_no)
-        x_maxpooled = linear1(x_maxpooled)
-        x_maxpooled = linear2(x_maxpooled)
-        print(x_maxpooled.shape)
-
-        linear3 = nn.Linear(in_features=1, out_features=layer_no)
-        linear4 = nn.Linear(in_features=layer_no, out_features=layer_no)
-        x_avgpooled = linear3(x_avgpooled)
-        x_avgpooled = linear4(x_avgpooled)
         
+        channel_attention = self.global_attention(x,layer_no=layer_no)
+        spatial_attention = self.spatial_attention(x, layer_no=layer_no)
+        temp = (x * channel_attention * spatial_attention)
+        print(temp.shape)
+        return temp
+
+    def global_attention(self, x, layer_no):
+    
+       # global max and avg poolings per the channels
+        self.adp_maxpool = nn.AdaptiveMaxPool1d(output_size=1)
+        self.adp_avgpool = nn.AdaptiveAvgPool1d(output_size=1)
+
+        x_avgpooled = self.adp_avgpool(x.permute(0,2,1))
+        x_maxpooled = self.adp_maxpool(x.permute(0,2,1))
+
+       # skipped the fcn after GMP and GAP 
+        self.linear1 = nn.Linear(in_features=1, out_features=layer_no)
+        x_avgpooled = self.linear1(x_avgpooled)
+
+        self.linear2 = nn.Linear(in_features=1, out_features=layer_no)
+        x_maxpooled = self.linear2(x_maxpooled)
+
         x = x_avgpooled + x_maxpooled
         sigmoid1 = nn.Sigmoid()
-        x = sigmoid1(x)
+        channel_attention = sigmoid1(x.permute(0,2,1))
 
-        return x
+       # outputs in the same shape of x  
+        return channel_attention
+
+    def spatial_attention(self,x,layer_no):
+        
+        self.adp_avgpool_chn = nn.AdaptiveAvgPool2d(output_size=(1,1))
+        self.max_avgpool_chn = nn.AdaptiveMaxPool2d(output_size=(1,1))
+
+        x_avgpooled = self.adp_avgpool_chn(x)
+        x_maxpooled = self.max_avgpool_chn(x)
+
+       # stack along features 
+        temp = torch.stack((x_avgpooled, x_maxpooled), dim=1)
+        temp = torch.squeeze(temp)
+        temp = torch.unsqueeze(temp, dim=-1)
+
+       # temp shape 1024, 2,1
+        att_conv1 = nn.Conv1d(in_channels=2, out_channels=layer_no, kernel_size=1)
+        temp = att_conv1(temp)
+        print(temp.shape)
+
+        sigm = nn.Sigmoid()
+        temp = sigm(temp)
+
+        return temp
 
     def forward(self,x):
 

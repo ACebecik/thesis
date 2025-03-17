@@ -39,11 +39,11 @@ if __name__ == "__main__":
     run_config = dict(
         INIT_LR = 5e-4,
         BATCH_SIZE = 4096,
-        EPOCHS = 40,
+        EPOCHS = 50,
         CHOSEN_DATASET = "um",
         RANDOM_SEED = 31,
         TEST_SIZE = 0.2,
-        COMPENSATOR_ARCH = "fcn-dae"
+        COMPENSATOR_ARCH = "fcn-dae-skip"
     )
    # wandb.init(project="test_run")
    # wandb.config = run_config
@@ -62,17 +62,14 @@ if __name__ == "__main__":
 
     parameters_dict = {
         'COMPENSATOR_ARCH': {
-           # 'values': ['fcn-dae', 'drdnn']
-           'values': ['fcn-dae-skip']
-            },
+            'values': ['fcn-dae-skip']
+                },
         'INIT_LR': {
-           # "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
-            "values" :[0.001, 0.0001] 
+            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
 
             },
         "BATCH_SIZE":{
-           # "values" :[1024, 2048, 4096] 
-           "values" :[4096] 
+            "values" :[1024, 2048, 4096, 8192] 
         }     
     } 
 
@@ -142,9 +139,9 @@ if __name__ == "__main__":
    # compensator.train()
 
 
-    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-only-skip-attention")
+    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-attention-final-run")
 
-    wandb.agent(sweep_id, compensator.train, count=2)
+    wandb.agent(sweep_id, compensator.train, count=15)
     
     """
     compensator = CompensationTrainer(lr=run_config["INIT_LR"],

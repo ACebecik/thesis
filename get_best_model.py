@@ -1,11 +1,9 @@
 import wandb
 api = wandb.Api()
 
-sweep = api.sweep("alperencebecik-rwth-aachen-university/new-data-run/dnztmbhb")
-runs = sorted(sweep.runs,
-  key=lambda run: run.summary.get("val_acc", 0), reverse=True)
-val_acc = runs[0].summary.get("val_acc", 0)
-print(f"Best run {runs[0].name} with {val_acc}% validation accuracy")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/aum-classifier-run/4lbajcq2")
 
-runs[0].file("model.h5").download(replace=True)
-print("Best model saved to model-best.h5")
+# Get best run parameters
+best_run = sweep.best_run()
+best_parameters = best_run.config
+print(best_parameters)

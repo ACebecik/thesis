@@ -93,3 +93,30 @@ class NoiseDetector(nn.Module):
         x = self.fc2(x)
 
         return x
+
+
+class LSTMClassifier(nn.Module):
+    def __init__(self, in_channels):
+        super(LSTMClassifier, self).__init__()
+
+        self.lstm = nn.LSTM(input_size=120, hidden_size=120)
+        self.fc1 = nn.Linear(in_features=120, out_features=120)
+        self.relu1 = nn.ReLU()
+
+        self.fc2 = nn.Linear(in_features=120, out_features=120)
+        self.relu2 = nn.ReLU()
+        
+        self.fc3 = nn.Linear(in_features=120, out_features=1)
+
+    def forward(self, x):
+
+        out, (ht, ct) = self.lstm(x)
+        out = out[:, -1, :]
+
+        x = self.fc1(out)
+        x = self.relu1(x)
+        x = self.fc2(x)
+        x = self.relu2(x)
+        x = self.fc3(x)
+
+        return x

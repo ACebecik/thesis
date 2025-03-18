@@ -62,14 +62,16 @@ if __name__ == "__main__":
 
     parameters_dict = {
         'COMPENSATOR_ARCH': {
-            'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
+          #  'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
+            "values" :["fcn-dae-skip"] 
                 },
         'INIT_LR': {
-            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
-
+         #   "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
+            "values" :[0.0001] 
             },
         "BATCH_SIZE":{
-            "values" :[1024, 2048, 4096, 8192] 
+         #   "values" :[1024, 2048, 4096, 8192] 
+            "values" :[2048] 
         }     
     } 
 
@@ -81,17 +83,21 @@ if __name__ == "__main__":
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    X_train = torch.load("tensors/final_tensors_1703/um_train_X.pt")
+    X_train = torch.load("tensors/final_tensors_1703/augmented_um_train_X.pt")
     X_test = torch.load("tensors/final_tensors_1703/um_test_X.pt")
-    X_train_reference = torch.load("tensors/final_tensors_1703/um_reference_train_X.pt")
+    X_train_reference = torch.load("tensors/final_tensors_1703/augmented_um_reference_train_X.pt")
     X_test_reference = torch.load("tensors/final_tensors_1703/um_reference_test_X.pt")
 
-    y_train = torch.load("tensors/final_tensors_1703/um_train_y.pt")
+    y_train = torch.load("tensors/final_tensors_1703/augmented_um_train_y.pt")
     y_test = torch.load("tensors/final_tensors_1703/um_test_y.pt")
 
     X_validation = torch.load("tensors/final_tensors_1703/um_validation_X.pt")
     y_validation = torch.load("tensors/final_tensors_1703/um_validation_y.pt")
     X_validation_reference = torch.load("tensors/final_tensors_1703/um_reference_validation_X.pt")
+
+
+
+
 
 
     """
@@ -136,29 +142,29 @@ if __name__ == "__main__":
    # compensator.train()
 
 
-    sweep_id = wandb.sweep(sweep_config, project="compensation-models-big-comparison-8-1-1")
+    sweep_id = wandb.sweep(sweep_config, project="augmented-dataset-comparison-run")
 
-    wandb.agent(sweep_id, compensator.train, count=50)
-    """    comp_results_train_loss, comp_results_val_loss = compensator.getRawResults()
-                
-        plt.plot(comp_results_train_loss, label='Train Loss')
-        plt.plot(comp_results_val_loss, label=' Val Loss')
+    wandb.agent(sweep_id, compensator.train, count=1)
+    comp_results_train_loss, comp_results_val_loss = compensator.getRawResults()
+            
+    plt.plot(comp_results_train_loss, label='Train Loss')
+    plt.plot(comp_results_val_loss, label=' Val Loss')
 
-        plt.xlabel('Epochs')
-        plt.ylabel("Loss")
-        plt.title('Loss')
-        plt.legend()
-        plt.savefig(f"plots/newdatasetLoss.png")
-        plt.clf()
+    plt.xlabel('Epochs')
+    plt.ylabel("Loss")
+    plt.title('Loss')
+    plt.legend()
+    plt.savefig(f"plots/newdatasetLoss.png")
+    plt.clf()
 
 
-        zero_idx_list = np.arange(2000,60000,100)
-        max_snaps = 100
-        snap_counter = 0
-        for i in zero_idx_list:
-            if snap_counter == max_snaps:
-                break        
-            compensator.getRandomSnapshot(random_seed=i)
-            snap_counter = snap_counter + 1"""
+    zero_idx_list = np.arange(2000,60000,100)
+    max_snaps = 100
+    snap_counter = 0
+    for i in zero_idx_list:
+        if snap_counter == max_snaps:
+            break        
+        compensator.getRandomSnapshot(random_seed=i)
+        snap_counter = snap_counter + 1
 
 

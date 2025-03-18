@@ -10,66 +10,41 @@ from tqdm import tqdm
 
 
 # load the data from saved tensors
-X_mit = torch.load("tensors/mit_all_records_X_w120_fixed.pt")
-y_mit = torch.load("tensors/mit_all_records_y_w360.pt")
+um_train_X = torch.load("tensors/final_tensors_1703/um_train_X.pt")
+um_train_y = torch.load("tensors/final_tensors_1703/um_train_y.pt")
+um_reference_train_X = torch.load("tensors/final_tensors_1703/um_reference_train_X.pt")
 
 
-X_unovis = torch.load("tensors/unovis_all_records_X_w120.pt")
-y_unovis = torch.load("tensors/unovis_all_records_y_w120.pt")
+# Data Augmentation
 
-print(y_mit.shape)
-print(y_unovis.shape)
+print(f"Old cd for y_train:{sum(um_train_y)/um_train_y.shape[0] } ") 
+init_train_length = um_train_y.shape[0]
 
-X = np.vstack((X_mit, X_unovis))
-y = np.concatenate((y_mit, y_unovis))
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2)
-
-# Data Augmentation so that the class distribution is balanced
-# 
-
-print(f"Old cd for y_train:{sum(y_train)/y_train.shape[0] } ") 
-init_train_length = y_train.shape[0]
-
-for segment in tqdm(range(init_train_length//2)):
-    if y_train[segment] == 1:
-        scaler = MinMaxScaler(feature_range=(0,2))
-        scaled_X_segment = scaler.fit_transform(X_train[segment, :].reshape(-1,1))
-       # print(scaled_X_segment.shape)
-       # print(X_train.shape, y_train.shape)
-
-        X_train = np.vstack((X_train, scaled_X_segment.squeeze()))         
-        y_train = np.hstack((y_train, np.array(1))) 
-
-       # print(X_train.shape, y_train.shape)
-        
-
-print(f"New cd for y_train:{sum(y_train)/y_train.shape[0] } ")
-
-torch.save(X_train, "tensors/augmented_UM_train_X.pt")
-torch.save(y_train, "tensors/augmented UM_train_y.pt")
-
-# test data augmentation
+augmented_train_segments_x =[]
+class_labels_y = []
+reference_train_segments_x =[] 
+scaler = MinMaxScaler(feature_range=(0,2))
 
 
-print(f"Old cd for y_test:{sum(y_test)/y_test.shape[0] } ") 
-init_test_length = y_test.shape[0]
+for segment in tqdm(range(init_train_length)):
 
-for segment in tqdm(range(init_test_length//2)):
-    if y_test[segment] == 1:
-        scaler = MinMaxScaler(feature_range=(0,2))
-        scaled_X_segment = scaler.fit_transform(X_test[segment, :].reshape(-1,1))
-       # print(scaled_X_segment.shape)
-       # print(X_test.shape, y_test.shape)
+    scaled_X_segment = scaler.fit_transform(um_train_X[segment, :].reshape(-1,1)).squeeze()
 
-        X_test = np.vstack((X_test, scaled_X_segment.squeeze()))         
-        y_test = np.hstack((y_test, np.array(1))) 
+   #add newly scaled segment to the train set  
+    augmented_train_segments_x.append(scaled_X_segment)
+    class_labels_y.append(um_train_y[segment])
+    reference_train_segments_x.append(um_reference_train_X[segment,:] )
 
-       # print(X_test.shape, y_test.shape)
-        
+augmented_train_segments_x = np.array(augmented_train_segments_x, dtype=np.float32)
+class_labels_y = np.array(class_labels_y, dtype=np.float32)
+reference_train_segments_x = np.array(reference_train_segments_x, dtype=np.float32)
 
-print(f"New cd for y_test:{sum(y_test)/y_test.shape[0] } ")
+#add newly scaled segment to the train set  
+aum_train_X = np.vstack((um_train_X, augmented_train_segments_x))
+aum_train_y = np.hstack((um_train_y, class_labels_y)) 
+aum_reference_train_X = np.vstack((um_reference_train_X, reference_train_segments_x))         
 
-torch.save(X_test, "tensors/augmented_UM_test_X.pt")
-torch.save(y_test, "tensors/augmented UM_test_y.pt")
+
+torch.save(torch.Tensor(aum_train_X), "tensors/final_tensors_1703/augmented_um_train_X.pt")
+torch.save(torch.Tensor(aum_train_y), "tensors/final_tensors_1703/augmented um_train_y.pt")
+torch.save(torch.Tensor(aum_reference_train_X), "tensors/final_tensors_1703/augmented um_reference_train_X.pt")

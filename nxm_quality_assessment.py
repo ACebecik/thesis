@@ -62,15 +62,14 @@ if __name__ == "__main__":
 
     parameters_dict = {
         'COMPENSATOR_ARCH': {
-            'values': ['fcn-dae']
+            'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
                 },
         'INIT_LR': {
-           # "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
-            "values" :[0.001] 
+            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
 
             },
         "BATCH_SIZE":{
-            "values" :[4096] 
+            "values" :[1024, 2048, 4096, 8192] 
         }     
     } 
 
@@ -135,14 +134,14 @@ if __name__ == "__main__":
                                         y_test=X_validation_reference)
 
    # compensator.train()
-   # comp_results_train_loss, comp_results_val_loss = compensator.getRawResults()
 
 
-    sweep_id = wandb.sweep(sweep_config, project="new-data-run")
+    sweep_id = wandb.sweep(sweep_config, project="compensation-models-big-comparison-8-1-1")
 
-    wandb.agent(sweep_id, compensator.train, count=1)
-            
-    """    plt.plot(comp_results_train_loss, label='Train Loss')
+    wandb.agent(sweep_id, compensator.train, count=50)
+    """    comp_results_train_loss, comp_results_val_loss = compensator.getRawResults()
+                
+        plt.plot(comp_results_train_loss, label='Train Loss')
         plt.plot(comp_results_val_loss, label=' Val Loss')
 
         plt.xlabel('Epochs')
@@ -153,8 +152,8 @@ if __name__ == "__main__":
         plt.clf()
 
 
-        zero_idx_list = np.arange(20,600,10)
-        max_snaps = 50
+        zero_idx_list = np.arange(2000,60000,100)
+        max_snaps = 100
         snap_counter = 0
         for i in zero_idx_list:
             if snap_counter == max_snaps:
@@ -162,4 +161,4 @@ if __name__ == "__main__":
             compensator.getRandomSnapshot(random_seed=i)
             snap_counter = snap_counter + 1"""
 
-    
+

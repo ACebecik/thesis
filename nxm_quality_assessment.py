@@ -39,7 +39,7 @@ if __name__ == "__main__":
     run_config = dict(
         INIT_LR = 5e-4,
         BATCH_SIZE = 4096,
-        EPOCHS = 100,
+        EPOCHS = 50,
         CHOSEN_DATASET = "um",
         RANDOM_SEED = 31,
         TEST_SIZE = 0.2,
@@ -140,9 +140,9 @@ if __name__ == "__main__":
 
    # wandb.agent(sweep_id, compensator.train, count=1)
 
-    sweep_id = wandb.sweep(sweep_config, project="aum-classifier-run")
+    sweep_id = wandb.sweep(sweep_config, project="aum-classifier-run-big")
 
-    wandb.agent(sweep_id, classifier.train, count=10)
+    wandb.agent(sweep_id, classifier.train, count=30)
 
     """ 
 

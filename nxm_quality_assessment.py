@@ -64,19 +64,22 @@ if __name__ == "__main__":
 
     parameters_dict = {
         "CLASSIFIER_ARCH":{
-            "values" : ["ansari", "lstm"]  
+            "values" : ["lstm"]  
         } ,
         'COMPENSATOR_ARCH': {
           #  'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
             "values" :["fcn-dae-skip"] 
                 },
         'INIT_LR': {
-            "values" :[0.01, 0.0033, 0.001, 0.00033, 0.0001, 0.000033, 0.00001] 
-        #    "values" :[0.0001] 
+            "distribution": "log_uniform_values",
+            "max": 0.1,
+            "min": 0.00001,
             },
         "BATCH_SIZE":{
-            "values" :[1024, 2048, 4096, 8192] 
-        #    "values" :[2048] 
+            "distribution": "q_log_uniform_values",
+            "max": 8192,
+            "min": 1024,
+            "q": 64, 
         }     
     } 
 
@@ -140,9 +143,9 @@ if __name__ == "__main__":
 
    # wandb.agent(sweep_id, compensator.train, count=1)
 
-    sweep_id = wandb.sweep(sweep_config, project="aum-classifier-run-big")
+    sweep_id = wandb.sweep(sweep_config, project="lstm-aum-optimization")
 
-    wandb.agent(sweep_id, classifier.train, count=30)
+    wandb.agent(sweep_id, classifier.train, count=50)
 
     """ 
 

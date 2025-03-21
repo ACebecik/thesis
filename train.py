@@ -54,6 +54,7 @@ class ClassificationTrainer():
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
             self.model_dropout = config.DROPOUT
+            self.fc_size = config.ANSARI_FC_SIZE
 
             self.compensation_X_test_segments = [] 
             
@@ -74,7 +75,7 @@ class ClassificationTrainer():
             print(f"[INFO] Initializing model name:{self.model_name}...")
             
             if self.model_name == "ansari":
-                self.model = NoiseDetector(in_channels=1, p_dropout=self.model_dropout).to(device=self.device)
+                self.model = NoiseDetector(in_channels=1, p_dropout=self.model_dropout, fc_size=self.fc_size).to(device=self.device)
         # more models can be added here for extensions 
 
             elif self.model_name == "lstm":

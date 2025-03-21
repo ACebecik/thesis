@@ -84,7 +84,10 @@ if __name__ == "__main__":
         },
         "DROPOUT":{
             "values" :[0.1, 0.2, 0.4] 
-        }  
+        },
+        "ANSARI_FC_SIZE":{
+            "values": [2048, 4096] 
+        } 
     } 
 
     sweep_config['parameters'] = parameters_dict
@@ -149,7 +152,7 @@ if __name__ == "__main__":
 
     sweep_id = wandb.sweep(sweep_config, project="ansari-dropout-test")
 
-    wandb.agent(sweep_id, classifier.train, count=3)
+    wandb.agent(sweep_id, classifier.train, count=50)
 
     """ 
 

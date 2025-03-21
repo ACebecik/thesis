@@ -28,7 +28,7 @@ from custom_dataset_for_dataloader import CustomDataset
 
 
 class NoiseDetector(nn.Module):
-    def __init__(self, in_channels=1, p_dropout=0.3):
+    def __init__(self, in_channels=1, p_dropout=0.3, fc_size = 1024):
         super(NoiseDetector,self).__init__()
 
         # First set of Conv,Relu,Pooling,Dropout
@@ -57,10 +57,10 @@ class NoiseDetector(nn.Module):
 
         #FC layers
         self.flatten1 = nn.Flatten()
-        self.fc1 = nn.Linear(in_features=448, out_features=1024)
+        self.fc1 = nn.Linear(in_features=448, out_features=fc_size)
         self.relu5 = nn.ReLU()
 
-        self.fc2 = nn.Linear(in_features=1024, out_features=1)
+        self.fc2 = nn.Linear(in_features=fc_size, out_features=1)
 
 
     def forward(self, x):
@@ -123,7 +123,7 @@ class LSTMClassifier(nn.Module):
     
 
 if __name__ == "__main__":
-    model_temp = NoiseDetector(p_dropout=0.4)
+    model_temp = NoiseDetector(p_dropout=0.4, fc_size=2048)
     X = torch.Tensor (np.ones((1024,1,120)))
     model_temp.forward(X)
 

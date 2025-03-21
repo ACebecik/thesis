@@ -96,17 +96,17 @@ class NoiseDetector(nn.Module):
 
 
 class LSTMClassifier(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, config_hidden_size=120):
         super(LSTMClassifier, self).__init__()
 
-        self.lstm = nn.LSTM(input_size=120, hidden_size=120)
-        self.fc1 = nn.Linear(in_features=120, out_features=120)
+        self.lstm = nn.LSTM(input_size=120, hidden_size=config_hidden_size)
+        self.fc1 = nn.Linear(in_features=config_hidden_size, out_features=config_hidden_size)
         self.relu1 = nn.ReLU()
 
-        self.fc2 = nn.Linear(in_features=120, out_features=120)
+        self.fc2 = nn.Linear(in_features=config_hidden_size, out_features=config_hidden_size)
         self.relu2 = nn.ReLU()
         
-        self.fc3 = nn.Linear(in_features=120, out_features=1)
+        self.fc3 = nn.Linear(in_features=config_hidden_size, out_features=1)
 
     def forward(self, x):
 
@@ -123,7 +123,7 @@ class LSTMClassifier(nn.Module):
     
 
 if __name__ == "__main__":
-    model_temp = NoiseDetector(p_dropout=0.4, fc_size=2048)
+    model_temp = LSTMClassifier(config_hidden_size=31)
     X = torch.Tensor (np.ones((1024,1,120)))
     model_temp.forward(X)
 

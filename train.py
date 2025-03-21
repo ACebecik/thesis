@@ -54,7 +54,7 @@ class ClassificationTrainer():
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
             self.model_dropout = config.DROPOUT
-            self.fc_size = config.ANSARI_FC_SIZE
+            self.fc_size = config.HIDDEN_SIZE
 
             self.compensation_X_test_segments = [] 
             

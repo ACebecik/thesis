@@ -83,10 +83,10 @@ if __name__ == "__main__":
             "q": 64, 
         },
         "DROPOUT":{
-            "values" :[0.1, 0.2, 0.4] 
+            "values" :[0.1, 0.2, 0.3, 0.4] 
         },
-        "ANSARI_FC_SIZE":{
-            "values": [2048, 4096] 
+        "HIDDEN_SIZE":{
+            "values": [1024, 2048, 4096] 
         } 
     } 
 

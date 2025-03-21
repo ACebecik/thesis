@@ -43,7 +43,6 @@ class ClassificationTrainer():
         self.y_test = y_test
         self.X_test_reference = X_test_reference
 
-
     
     def train(self, run_config=None):
     
@@ -54,6 +53,7 @@ class ClassificationTrainer():
             self.model_name = config.CLASSIFIER_ARCH
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
+            self.model_dropout = config.DROPOUT
 
             self.compensation_X_test_segments = [] 
             
@@ -74,7 +74,7 @@ class ClassificationTrainer():
             print(f"[INFO] Initializing model name:{self.model_name}...")
             
             if self.model_name == "ansari":
-                self.model = NoiseDetector(in_channels=1).to(device=self.device)
+                self.model = NoiseDetector(in_channels=1, p_dropout=self.model_dropout).to(device=self.device)
         # more models can be added here for extensions 
 
             elif self.model_name == "lstm":

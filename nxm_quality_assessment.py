@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     parameters_dict = {
         "CLASSIFIER_ARCH":{
-            "values" : ["lstm"]  
+            "values" : ["ansari"]  
         } ,
         'COMPENSATOR_ARCH': {
           #  'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
@@ -81,7 +81,10 @@ if __name__ == "__main__":
             "max": 8192,
             "min": 1024,
             "q": 64, 
-        }     
+        },
+        "DROPOUT":{
+            "values" :[0.1, 0.2, 0.4] 
+        }  
     } 
 
     sweep_config['parameters'] = parameters_dict
@@ -144,9 +147,9 @@ if __name__ == "__main__":
 
    # wandb.agent(sweep_id, compensator.train, count=1)
 
-    sweep_id = wandb.sweep(sweep_config, project="drdnn-aum-optimization")
+    sweep_id = wandb.sweep(sweep_config, project="ansari-dropout-test")
 
-    wandb.agent(sweep_id, compensator.train, count=50)
+    wandb.agent(sweep_id, classifier.train, count=3)
 
     """ 
 

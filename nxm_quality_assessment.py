@@ -65,7 +65,8 @@ if __name__ == "__main__":
 
     parameters_dict = {
         "CLASSIFIER_ARCH":{
-            "values" : ["ansari"]  
+           # "values" : ["lstm", "ansari"]  
+           "values" : ["ansari"]  
         } ,
         'COMPENSATOR_ARCH': {
           #  'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
@@ -85,9 +86,12 @@ if __name__ == "__main__":
         "DROPOUT":{
             "values" :[0.1, 0.2, 0.3, 0.4] 
         },
-        "HIDDEN_SIZE":{
+        "ANSARI_HIDDEN_SIZE":{
             "values": [1024, 2048, 4096] 
-        } 
+        },
+        "LSTM_HIDDEN_SIZE":{
+            "values": [120, 240, 360] 
+        }  
     } 
 
     sweep_config['parameters'] = parameters_dict
@@ -150,7 +154,7 @@ if __name__ == "__main__":
 
    # wandb.agent(sweep_id, compensator.train, count=1)
 
-    sweep_id = wandb.sweep(sweep_config, project="ansari-dropout-test")
+    sweep_id = wandb.sweep(sweep_config, project="ansari-aum-hidden-size-optimization")
 
     wandb.agent(sweep_id, classifier.train, count=50)
 

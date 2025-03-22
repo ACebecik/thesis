@@ -1,16 +1,38 @@
 import wandb
 import pandas as pd
 import matplotlib.pyplot as plt
+from classification_models import NoiseDetector, LSTMClassifier
+from compensation_models import DRDNN, FCN_DAE, FCN_DAE_skip
+import torch
+import numpy as np
+
 
 api = wandb.Api()
-
-sweep = api.sweep("alperencebecik-rwth-aachen-university/ansari-aum-optimization/5c5s7qee")
+wandb.init()
+sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
 
 # Get best run parameters
 best_run = sweep.best_run(order="classification_val_acc")
 
 best_parameters = best_run.config
 print(best_parameters)
+
+dummy_input = torch.Tensor (np.ones((1024,1,120)))
+classifier_flag = True
+
+if classifier_flag == True:
+    if best_parameters["CLASSIFIER_ARCH"] == "ansari":
+        model = NoiseDetector(  p_dropout=best_parameters["DROPOUT"],
+                                fc_size=best_parameters["ANSARI_HIDDEN_SIZE"])
+        # Save the model in the exchangeable ONNX format
+        torch.onnx.export(model, dummy_input, "models/ansari_model.onnx")
+        wandb.save("ansari_model.onnx")
+
+    else:
+        model = LSTMClassifier(config_hidden_size= best_parameters["LSTM_HIDDEN_SIZE"] )
+        torch.onnx.export(model, dummy_input, "models/lstm_model.onnx")
+        wandb.save("lstm_model.onnx")
+
 
 best_run_values = pd.DataFrame(best_run.history())
 print(list(best_run_values.columns.values))

@@ -54,7 +54,8 @@ class ClassificationTrainer():
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
             self.model_dropout = config.DROPOUT
-            self.fc_size = config.HIDDEN_SIZE
+            self.ansari_fc_size = config.ANSARI_HIDDEN_SIZE
+            self.lstm_hidden_size = config.LSTM_HIDDEN_SIZE
 
             self.compensation_X_test_segments = [] 
             
@@ -75,11 +76,11 @@ class ClassificationTrainer():
             print(f"[INFO] Initializing model name:{self.model_name}...")
             
             if self.model_name == "ansari":
-                self.model = NoiseDetector(in_channels=1, p_dropout=self.model_dropout, fc_size=self.fc_size).to(device=self.device)
+                self.model = NoiseDetector(in_channels=1, p_dropout=self.model_dropout, fc_size=self.ansari_fc_size).to(device=self.device)
         # more models can be added here for extensions 
 
             elif self.model_name == "lstm":
-                self.model = LSTMClassifier(in_channels=1).to(device=self.device)
+                self.model = LSTMClassifier(config_hidden_size=self.lstm_hidden_size).to(device=self.device)
 
             self.opt = optim.Adam(self.model.parameters(), lr=self.lr)
             self.lossFn = nn.BCEWithLogitsLoss()
@@ -240,4 +241,62 @@ class ClassificationTrainer():
     def getCompensationSegments(self):
 
         return self.compensation_X_test_segments, self.compensation_X_test_reference
+    
+
+    def test(self, X_test, y_test, X_reference_test):
+        
+        self.X_test_final = X_test
+        self.y_test_final = y_test
+        self.X_reference_test_final = X_reference_test
+
+        compensation_X_test_segments = [] 
+        corresponding_X_test_reference = []   
+
+        self.testData = CustomDataset(self.X_test_final, self.y_test_final)
+        self.test_size = self.y_test.shape[0]
+
+        # initialize the test data loader
+        self.testDataLoader = DataLoader(self.testData, shuffle=True, batch_size=self.batch_size)
+    
+        # number of steps per epoch 
+        self.no_testSteps = len(self.testDataLoader.dataset) // self.batch_size
+
+        # Run the model on some test examples
+        with torch.no_grad():
+            # set the model in evaluation mode
+            self.model.eval()
+
+            # clear confusion matrix
+            conf_matrix =np.zeros((2,2)) 
+            batch_counter = 0
+
+            # loop over the validation set
+            for X_batch, y_batch in self.testDataLoader:
+                X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
+
+                # send the input to the device
+                (X_batch, y_batch) = (X_batch.to(self.device), y_batch.to(self.device))
+
+                # make the predictions and calculate the validation loss
+                pred = self.model(X_batch)
+                lossTest = self.lossFn(pred, y_batch)
+                getPreds = nn.Sigmoid()
+                predProbTest = getPreds(pred)
+                totalTestLoss = totalTestLoss + lossTest
+                test_acc = test_acc + ((predProbTest>0.5)==y_batch).sum()
+
+            # confusion matrix 
+                predictions = (predProbTest>0.5)*1
+                temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
+                conf_matrix = np.add(conf_matrix, temp_conf_matrix)
+            
+
+
+        avgTestAcc = float(test_acc/self.test_size)
+        avgTestLoss = float(totalTestLoss /self.no_testSteps)
+        print(str.format("Avg Test Loss: {:.6f}, Avg Test Acc: {:.6f}", avgTestLoss, avgTestAcc))
+        
+        # Save the model in the exchangeable ONNX format
+        torch.onnx.export(self.model, self.X_test, "model.onnx")
+        wandb.save("model.onnx")
 

@@ -48,8 +48,11 @@ class ClassificationTrainer():
     
         with wandb.init(config=run_config):
 
-            config = wandb.config
-            
+
+           # CHANGE HERE IMPORTANT FOR SWEEP 
+           # config = wandb.config
+            config = run_config
+
             self.model_name = config.CLASSIFIER_ARCH
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
@@ -260,11 +263,13 @@ class ClassificationTrainer():
     
         # number of steps per epoch 
         self.no_testSteps = len(self.testDataLoader.dataset) // self.batch_size
-
+  
         # Run the model on some test examples
         with torch.no_grad():
             # set the model in evaluation mode
             self.model.eval()
+            totalTestLoss = 0
+            test_acc = 0
 
             # clear confusion matrix
             conf_matrix =np.zeros((2,2)) 
@@ -295,7 +300,7 @@ class ClassificationTrainer():
         avgTestAcc = float(test_acc/self.test_size)
         avgTestLoss = float(totalTestLoss /self.no_testSteps)
         print(str.format("Avg Test Loss: {:.6f}, Avg Test Acc: {:.6f}", avgTestLoss, avgTestAcc))
-        
+
         # Save the model in the exchangeable ONNX format
         torch.onnx.export(self.model, self.X_test, "model.onnx")
         wandb.save("model.onnx")

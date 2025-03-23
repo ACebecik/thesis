@@ -55,6 +55,7 @@ class CompensationTrainer():
             self.model_name = config.COMPENSATOR_ARCH
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
+            self.lstm_hidden_size = config.LSTM_HIDDEN_SIZE
 
             self.trainData = CustomDataset(self.X_train, self.y_train)
             self.testData = CustomDataset(self.X_test, self.y_test)
@@ -73,7 +74,7 @@ class CompensationTrainer():
             print(f"[INFO] Initializing model name:{self.model_name}...")
             
             if self.model_name == "drdnn":
-                self.model = DRDNN(batch_size=self.batch_size).to(device=self.device)
+                self.model = DRDNN(lstm_hidden_size=self.lstm_hidden_size).to(device=self.device)
             
             elif self.model_name == "fcn-dae":
                 self.model = FCN_DAE().to(device=self.device)

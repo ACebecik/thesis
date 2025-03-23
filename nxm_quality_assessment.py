@@ -154,9 +154,9 @@ if __name__ == "__main__":
 
    # wandb.agent(sweep_id, compensator.train, count=1)
 
-    sweep_id = wandb.sweep(sweep_config, project="ansari-aum-hidden-size-optimization")
+    sweep_id = wandb.sweep(sweep_config, project="drdnn-aum-hidden-size-optimization")
 
-    wandb.agent(sweep_id, classifier.train, count=50)
+    wandb.agent(sweep_id, compensator.train, count=50)
 
     """ 
 

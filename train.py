@@ -301,7 +301,4 @@ class ClassificationTrainer():
         avgTestLoss = float(totalTestLoss /self.no_testSteps)
         print(str.format("Avg Test Loss: {:.6f}, Avg Test Acc: {:.6f}", avgTestLoss, avgTestAcc))
 
-        # Save the model in the exchangeable ONNX format
-        torch.onnx.export(self.model, self.X_test, "model.onnx")
-        wandb.save("model.onnx")
 

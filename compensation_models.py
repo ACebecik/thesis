@@ -33,18 +33,17 @@ from plotter import Plotter
 
 
 class DRDNN(nn.Module):
-    def __init__(self, batch_size):
+    def __init__(self, lstm_hidden_size):
         super(DRDNN,self).__init__()
 
-        self.lstm = nn.LSTM(input_size=120, hidden_size=120)
-        self.fc1 = nn.Linear(in_features=120, out_features=120)
-        self.fc1 = nn.Linear(in_features=120, out_features=120)
+        self.lstm = nn.LSTM(input_size=120, hidden_size=lstm_hidden_size)
+        self.fc1 = nn.Linear(in_features=lstm_hidden_size, out_features=lstm_hidden_size)
         self.relu1 = nn.ReLU()
 
-        self.fc2 = nn.Linear(in_features=120, out_features=120)
+        self.fc2 = nn.Linear(in_features=lstm_hidden_size, out_features=lstm_hidden_size)
         self.relu2 = nn.ReLU()
         
-        self.fc3 = nn.Linear(in_features=120, out_features=120)
+        self.fc3 = nn.Linear(in_features=lstm_hidden_size, out_features=120)
 
     def forward(self, x):
 

@@ -62,7 +62,7 @@ model_name_selected = best_parameters["CLASSIFIER_ARCH"]
 run_config = best_parameters
 print(best_parameters)
 
-run_config["EPOCHS"] = 10 
+run_config["EPOCHS"] = 50 
 """
 sweep_config ={
     "method": "random",

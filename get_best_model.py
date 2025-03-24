@@ -9,7 +9,7 @@ import numpy as np
 
 api = wandb.Api()
 wandb.init()
-sweep = api.sweep("alperencebecik-rwth-aachen-university/ansari-aum-hidden-size-optimization/k3o7p6vs")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
 
 # Get best run parameters
 best_run = sweep.best_run(order="classification_val_acc")
@@ -48,8 +48,8 @@ plt.plot(train_df["classification_train_acc"], label = "Training Accuracy")
 plt.xlabel("Epochs")
 plt.ylabel("Accuracy")
 plt.legend(loc="best")
-plt.title("Train and Validation Accuracy - CNN")
-plt.savefig ("plots/best_runs/ansari_best_run_acc")
+plt.title("Train and Validation Accuracy - LSTM")
+plt.savefig ("plots/best_runs/lstm_best_run_acc")
 plt.clf()
 
 plt.plot(val_df["classification_val_loss"], label="Validation Loss")
@@ -57,5 +57,5 @@ plt.plot(train_df["classification_train_loss"], label = "Training Loss")
 plt.xlabel("Epochs")
 plt.ylabel("Loss")
 plt.legend(loc="best")
-plt.title("Train and Validation Loss - CNN")
-plt.savefig ("plots/best_runs/ansari_best_run_loss")
+plt.title("Train and Validation Loss - LSTM")
+plt.savefig ("plots/best_runs/lstm_best_run_loss")

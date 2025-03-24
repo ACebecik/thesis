@@ -222,6 +222,8 @@ class ClassificationTrainer():
 
             self.compensation_X_test_segments = torch.squeeze(self.compensation_X_test_segments)
 
+        torch.save(self.model.state_dict(), "models/lstm.pt")
+
     def getRawResults(self):
         return (self.results_train_acc, self.results_train_loss, self.results_val_acc, self.results_val_loss)
 
@@ -248,6 +250,7 @@ class ClassificationTrainer():
 
     def test(self, X_test, y_test, X_reference_test):
         
+        self.model.load_state_dict(torch.load("models/lstm.pt"))
         self.X_test_final = X_test
         self.y_test_final = y_test
         self.X_reference_test_final = X_reference_test

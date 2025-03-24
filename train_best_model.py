@@ -50,8 +50,8 @@ class newconfig:
 
 
 api = wandb.Api()
-wandb.init(project="ansari-best-run-newconfig-class")
-sweep = api.sweep("alperencebecik-rwth-aachen-university/ansari-aum-hidden-size-optimization/k3o7p6vs")
+wandb.init(project="lstm-best-run-newconfig-class")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
 
 # Get best run parameters
 best_run = sweep.best_run(order="classification_val_acc")
@@ -160,13 +160,14 @@ val_confusion_matrix = classifier.getBestConfusionMatrix()
 
 disp_conf_matrix = ConfusionMatrixDisplay(val_confusion_matrix)
 disp_conf_matrix.plot()
-plt.savefig(f"ansari_val_CONF.png")
+plt.savefig(f"lstm_val_CONF.png")
 plt.clf()
+
 
 test_loss, test_acc, test_conf_matrix = classifier.test(X_test=X_test, y_test=y_test, X_reference_test=X_test_reference)
 disp_conf_matrix = ConfusionMatrixDisplay(test_conf_matrix)
 disp_conf_matrix.plot()
-plt.savefig(f"ansari_test_CONF.png")
+plt.savefig(f"lstm_test_CONF.png")
 plt.clf()
 print(f"Test Loss:{test_loss}, Test Acc:{test_acc}")
 
@@ -174,7 +175,7 @@ print(f"Test Loss:{test_loss}, Test Acc:{test_acc}")
 mit_test_loss, mit_test_acc, mit_test_conf_matrix = classifier.test(X_test=X_test_mit, y_test=y_test_mit, X_reference_test=X_test_reference_mit)
 disp_conf_matrix = ConfusionMatrixDisplay(mit_test_conf_matrix)
 disp_conf_matrix.plot()
-plt.savefig(f"ansari_mit_test_CONF.png")
+plt.savefig(f"lstm_mit_test_CONF.png")
 plt.clf()
 print(f"MIT Test Loss:{mit_test_loss}, Test Acc:{mit_test_acc}")
 
@@ -183,7 +184,7 @@ print(f"MIT Test Loss:{mit_test_loss}, Test Acc:{mit_test_acc}")
 unovis_test_loss, unovis_test_acc, unovis_test_conf_matrix = classifier.test(X_test=X_test_unovis, y_test=y_test_unovis, X_reference_test=X_test_reference_unovis)
 disp_conf_matrix = ConfusionMatrixDisplay(unovis_test_conf_matrix)
 disp_conf_matrix.plot()
-plt.savefig(f"ansari_unovis_test_CONF.png")
+plt.savefig(f"lstm_unovis_test_CONF.png")
 plt.clf()
 print(f"Unovis Test Loss:{unovis_test_loss}, Test Acc:{unovis_test_acc}")
 

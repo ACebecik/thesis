@@ -9,7 +9,7 @@ import numpy as np
 
 api = wandb.Api()
 wandb.init()
-sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/ansari-aum-hidden-size-optimization/k3o7p6vs")
 
 # Get best run parameters
 best_run = sweep.best_run(order="classification_val_acc")
@@ -18,7 +18,7 @@ best_parameters = best_run.config
 print(best_parameters)
 
 dummy_input = torch.Tensor (np.ones((1024,1,120)))
-classifier_flag = True
+classifier_flag = False
 
 if classifier_flag == True:
     if best_parameters["CLASSIFIER_ARCH"] == "ansari":

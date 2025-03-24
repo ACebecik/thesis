@@ -56,6 +56,7 @@ class CompensationTrainer():
             self.lr = config.INIT_LR
             self.batch_size = config.BATCH_SIZE
             self.lstm_hidden_size = config.LSTM_HIDDEN_SIZE
+            self.dropout = config.DROPOUT
 
             self.trainData = CustomDataset(self.X_train, self.y_train)
             self.testData = CustomDataset(self.X_test, self.y_test)
@@ -77,7 +78,7 @@ class CompensationTrainer():
                 self.model = DRDNN(lstm_hidden_size=self.lstm_hidden_size).to(device=self.device)
             
             elif self.model_name == "fcn-dae":
-                self.model = FCN_DAE().to(device=self.device)
+                self.model = FCN_DAE(p_dropout=self.dropout).to(device=self.device)
 
             elif self.model_name == "fcn-dae-skip":
                 self.model = FCN_DAE_skip().to(device=self.device)

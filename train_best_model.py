@@ -50,8 +50,8 @@ class newconfig:
 
 
 api = wandb.Api()
-wandb.init(project="lstm-best-run-newconfig-class")
-sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
+wandb.init(project="ansari-best-run-newconfig-class")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/ansari-aum-hidden-size-optimization/k3o7p6vs")
 
 # Get best run parameters
 best_run = sweep.best_run(order="classification_val_acc")
@@ -134,10 +134,11 @@ X_validation_reference = torch.load("tensors/final_tensors_1703/um_reference_val
 
 X_test_reference_mit = torch.load("tensors/final_tensors_1703/mit_reference_test_X.pt")
 X_test_mit = torch.load("tensors/final_tensors_1703/mit_test_X.pt")
+y_test_mit = torch.load("tensors/final_tensors_1703/mit_test_y.pt")
 
 X_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_X.pt")
 X_test_reference_unovis = torch.load("tensors/final_tensors_1703/unovis_reference_test_X.pt")
-
+y_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_y.pt")
 
 classifier = ClassificationTrainer(lr=run_config["INIT_LR"], 
                                     batch_size=run_config["BATCH_SIZE"], 
@@ -156,5 +157,35 @@ classifier = ClassificationTrainer(lr=run_config["INIT_LR"],
 classifier.train(run_config=best_config)
 results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
 val_confusion_matrix = classifier.getBestConfusionMatrix()
-classifier.test(X_test=X_test, y_test=y_test, X_reference_test=X_test_reference)
+
+disp_conf_matrix = ConfusionMatrixDisplay(val_confusion_matrix)
+disp_conf_matrix.plot()
+plt.savefig(f"ansari_val_CONF.png")
+plt.clf()
+
+test_loss, test_acc, test_conf_matrix = classifier.test(X_test=X_test, y_test=y_test, X_reference_test=X_test_reference)
+disp_conf_matrix = ConfusionMatrixDisplay(test_conf_matrix)
+disp_conf_matrix.plot()
+plt.savefig(f"ansari_test_CONF.png")
+plt.clf()
+print(f"Test Loss:{test_loss}, Test Acc:{test_acc}")
+
+
+mit_test_loss, mit_test_acc, mit_test_conf_matrix = classifier.test(X_test=X_test_mit, y_test=y_test_mit, X_reference_test=X_test_reference_mit)
+disp_conf_matrix = ConfusionMatrixDisplay(mit_test_conf_matrix)
+disp_conf_matrix.plot()
+plt.savefig(f"ansari_mit_test_CONF.png")
+plt.clf()
+print(f"MIT Test Loss:{mit_test_loss}, Test Acc:{mit_test_acc}")
+
+
+
+unovis_test_loss, unovis_test_acc, unovis_test_conf_matrix = classifier.test(X_test=X_test_unovis, y_test=y_test_unovis, X_reference_test=X_test_reference_unovis)
+disp_conf_matrix = ConfusionMatrixDisplay(unovis_test_conf_matrix)
+disp_conf_matrix.plot()
+plt.savefig(f"ansari_unovis_test_CONF.png")
+plt.clf()
+print(f"MIT Test Loss:{unovis_test_loss}, Test Acc:{unovis_test_acc}")
+
+
 

@@ -70,7 +70,7 @@ if __name__ == "__main__":
         } ,
         'COMPENSATOR_ARCH': {
           #  'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
-            "values" :["drdnn"] 
+            "values" :["fcn-dae"] 
                 },
         'INIT_LR': {
             "distribution": "log_uniform_values",
@@ -154,7 +154,7 @@ if __name__ == "__main__":
 
    # wandb.agent(sweep_id, compensator.train, count=1)
 
-    sweep_id = wandb.sweep(sweep_config, project="drdnn-aum-hidden-size-optimization")
+    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-dropout-aum-optimization")
 
     wandb.agent(sweep_id, compensator.train, count=50)
 

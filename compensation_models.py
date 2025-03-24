@@ -61,24 +61,28 @@ class DRDNN(nn.Module):
 
 
 class FCN_DAE(nn.Module):
-    def __init__(self, in_channels=1):
+    def __init__(self, in_channels=1, p_dropout=0.1):
         super(FCN_DAE, self).__init__()
 
         # First set of Conv,Relu,Pooling,Dropout
         self.conv1 = nn.Conv1d(in_channels=in_channels, out_channels=20, kernel_size=16, stride=2, padding=7)
         self.relu1 = nn.ReLU()
+        self.drop1 = nn.Dropout(p=p_dropout)
 
         # 2nd
         self.conv2 = nn.Conv1d(in_channels=20, out_channels=40, kernel_size=16, stride=2, padding=7)
         self.relu2 = nn.ReLU()
+        self.drop2 = nn.Dropout(p=p_dropout)
 
         #3rd
         self.conv3 = nn.Conv1d(in_channels=40, out_channels=80, kernel_size=16, stride=2, padding=7)
         self.relu3 = nn.ReLU()
+        self.drop3 = nn.Dropout(p=p_dropout)
 
         #4th
         self.conv4 = nn.Conv1d(in_channels=80, out_channels=160, kernel_size=8, stride=1, padding=1)
         self.relu4 = nn.ReLU()
+        self.drop4 = nn.Dropout(p=p_dropout)
 
         # decoder
 
@@ -98,15 +102,19 @@ class FCN_DAE(nn.Module):
 
         x = self.conv1(x)
         x = self.relu1(x)
+        x = self.drop1(x)
 
         x = self.conv2(x)
         x = self.relu2(x)
+        x = self.drop2(x)
 
         x = self.conv3(x)
         x = self.relu3(x)
+        x = self.drop3(x)
 
         x = self.conv4(x)
         x = self.relu4(x)
+        x = self.drop4(x)
 
         x = self.deconv1(x)
         x = self.relu5(x)

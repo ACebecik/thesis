@@ -272,7 +272,7 @@ class ClassificationTrainer():
             test_acc = 0
 
             # clear confusion matrix
-            conf_matrix =np.zeros((2,2)) 
+            self.test_conf_matrix =np.zeros((2,2)) 
             batch_counter = 0
 
             # loop over the validation set
@@ -293,12 +293,14 @@ class ClassificationTrainer():
             # confusion matrix 
                 predictions = (predProbTest>0.5)*1
                 temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
-                conf_matrix = np.add(conf_matrix, temp_conf_matrix)
-            
+                self.test_conf_matrix = np.add(self.test_conf_matrix, temp_conf_matrix)
+
 
 
         avgTestAcc = float(test_acc/self.test_size)
         avgTestLoss = float(totalTestLoss /self.no_testSteps)
         print(str.format("Avg Test Loss: {:.6f}, Avg Test Acc: {:.6f}", avgTestLoss, avgTestAcc))
 
+        return avgTestLoss, avgTestAcc, self.test_conf_matrix        
+        
 

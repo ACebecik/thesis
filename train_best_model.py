@@ -185,7 +185,7 @@ disp_conf_matrix = ConfusionMatrixDisplay(unovis_test_conf_matrix)
 disp_conf_matrix.plot()
 plt.savefig(f"ansari_unovis_test_CONF.png")
 plt.clf()
-print(f"MIT Test Loss:{unovis_test_loss}, Test Acc:{unovis_test_acc}")
+print(f"Unovis Test Loss:{unovis_test_loss}, Test Acc:{unovis_test_acc}")
 
 
 

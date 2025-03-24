@@ -197,7 +197,3 @@ if __name__ == "__main__":
         plotter.plot_accuracy(results_train_acc,results_val_acc)
         plotter.plot_loss(results_train_loss, results_val_loss)
         plotter.plot_confusion_matrix(best_confusion_matrix)"""
-
-
-
-

@@ -50,14 +50,14 @@ class newconfig:
 
 
 api = wandb.Api()
-wandb.init(project="lstm-best-run-newconfig-class")
-sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
+wandb.init(project="drdnn-best-run-newconfig-class")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/drdnn-aum-hidden-size-optimization/cnj0a1jj")
 
 # Get best run parameters
-best_run = sweep.best_run(order="classification_val_acc")
+best_run = sweep.best_run()
 
 best_parameters = best_run.config
-model_name_selected = best_parameters["CLASSIFIER_ARCH"]
+model_name_selected = best_parameters["COMPENSATOR_ARCH"]
 
 run_config = best_parameters
 print(best_parameters)
@@ -140,6 +140,12 @@ X_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_X.pt")
 X_test_reference_unovis = torch.load("tensors/final_tensors_1703/unovis_reference_test_X.pt")
 y_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_y.pt")
 
+
+
+
+"""
+# CLASSIFICATION
+
 classifier = ClassificationTrainer(lr=run_config["INIT_LR"], 
                                     batch_size=run_config["BATCH_SIZE"], 
                                     no_epochs=run_config["EPOCHS"], 
@@ -180,7 +186,6 @@ plt.clf()
 print(f"MIT Test Loss:{mit_test_loss}, Test Acc:{mit_test_acc}")
 
 
-
 unovis_test_loss, unovis_test_acc, unovis_test_conf_matrix = classifier.test(X_test=X_test_unovis, y_test=y_test_unovis, X_reference_test=X_test_reference_unovis)
 disp_conf_matrix = ConfusionMatrixDisplay(unovis_test_conf_matrix)
 disp_conf_matrix.plot()
@@ -188,5 +193,31 @@ plt.savefig(f"lstm_unovis_test_CONF.png")
 plt.clf()
 print(f"Unovis Test Loss:{unovis_test_loss}, Test Acc:{unovis_test_acc}")
 
+"""
 
 
+
+compensator = CompensationTrainer(lr=run_config["INIT_LR"],
+                                        batch_size=run_config["BATCH_SIZE"],
+                                        no_epochs=run_config["EPOCHS"],
+                                        model_arch=run_config["COMPENSATOR_ARCH"] ,
+                                        X_train=X_train,
+                                        y_train=X_train_reference, 
+                                        X_test=X_validation,
+                                        y_test=X_validation_reference)
+
+val_loss = compensator.train(run_config=best_config)
+
+
+test_loss = compensator.test(X_test=X_test, y_test=X_test_reference)
+
+mit_test_loss = compensator.test(X_test=X_test_mit, y_test=X_test_reference_mit)
+
+unovis_test_loss = compensator.test(X_test=X_test_unovis, y_test=X_test_reference_unovis)
+
+
+
+print(val_loss)
+print(test_loss)
+print(mit_test_loss)
+print(unovis_test_loss)

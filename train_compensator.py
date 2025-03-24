@@ -49,8 +49,12 @@ class CompensationTrainer():
     def train(self, run_config=None):
         
         with wandb.init(config=run_config):
+            
+            
+            # CHANGE HERE IMPORTANT FOR SWEEP 
 
-            config = wandb.config
+           # config = wandb.config
+            config = run_config
 
             self.model_name = config.COMPENSATOR_ARCH
             self.lr = config.INIT_LR
@@ -137,7 +141,7 @@ class CompensationTrainer():
 
                 avgTrainLoss = float(totalTrainLoss /self.no_trainSteps)
                 if e % 10 == 0:
-                    print(str.format("Epoch: {}, Avg training loss: {:.6f}", e+1, avgTrainLoss))
+                    print(str.format("Epoch: {}, Avg training loss: {}", e+1, avgTrainLoss))
                 
                 wandb.log({"epoch": e, "compensation_train_loss": avgTrainLoss})
 
@@ -181,6 +185,9 @@ class CompensationTrainer():
             # finish measuring how long training took
             endTime = time.time()
             print("[INFO] total time taken to train the model: {:.2f}s".format(endTime - startTime))
+            
+        torch.save(self.model.state_dict(), "models/drdnn.pt")
+        return avgValLoss
 
     def getRawResults(self):
         return (self.results_train_loss, self.results_val_loss)
@@ -212,6 +219,48 @@ class CompensationTrainer():
         plt.savefig(f"snaps/snapshot of one segment seed{random_seed}snap.png")
         plt.clf()
 
+
+    def test(self,  X_test, y_test):
+
+        self.model.load_state_dict(torch.load("models/drdnn.pt"))
+        self.X_test_final = X_test
+        self.y_test_final = y_test
+
+        self.testData = CustomDataset(self.X_test_final, self.y_test_final)
+        self.test_size = self.y_test.shape[0]
+
+        # initialize the test data loader
+        self.testDataLoader = DataLoader(self.testData, shuffle=True, batch_size=self.batch_size)
+    
+        # number of steps per epoch 
+        self.no_testSteps = len(self.testDataLoader.dataset) // self.batch_size
+
+        totalTestLoss = 0
+
+        with torch.no_grad():
+                    # set the model in evaluation mode
+            self.model.eval()
+
+
+            # loop over the validation set
+            for X_batch, y_batch in self.testDataLoader:
+                X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
+
+                # send the input to the device
+                (X_batch, y_batch) = (X_batch.to(self.device), y_batch.to(self.device))
+
+                # make the predictions and calculate the validation loss
+                pred = self.model(X_batch)
+                if self.model_name == "drdnn":
+                    pred = torch.unsqueeze(pred,dim=1)
+                
+                lossTest = self.lossFn(pred, y_batch)
+                totalTestLoss = totalTestLoss + lossTest
+
+            avgTestLoss = float(totalTestLoss /self.no_testSteps)
+            print(str.format("Avg Test Loss: {:.6f}", avgTestLoss))
+        
+        return avgTestLoss
 
 if __name__ == "__main__":
     pass

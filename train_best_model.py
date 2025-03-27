@@ -50,8 +50,8 @@ class newconfig:
 
 
 api = wandb.Api()
-wandb.init(project="drdnn-best-run-newconfig-class")
-sweep = api.sweep("alperencebecik-rwth-aachen-university/drdnn-aum-hidden-size-optimization/cnj0a1jj")
+wandb.init(project="fcn-dae-best-run-newconfig-class")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/fcn-dae-dropout-aum-optimization/u4cx8sll")
 
 # Get best run parameters
 best_run = sweep.best_run(order="")
@@ -112,9 +112,9 @@ best_config = newconfig(classifier_arch= best_parameters["CLASSIFIER_ARCH"],
                         compensator_arch= best_parameters["COMPENSATOR_ARCH"],
                         lr=best_parameters["INIT_LR"],
                         batch_size= best_parameters["BATCH_SIZE"],
-                     #    dropout=best_parameters["DROPOUT"],
+                        dropout=best_parameters["DROPOUT"],
                      #   ansari_hidden_size= best_parameters["ANSARI_HIDDEN_SIZE"],
-                        lstm_hidden_size=best_parameters["LSTM_HIDDEN_SIZE"]     
+                   #     lstm_hidden_size=best_parameters["LSTM_HIDDEN_SIZE"]     
                      )
 
 
@@ -210,15 +210,13 @@ compensator = CompensationTrainer(lr=run_config["INIT_LR"],
 val_loss = compensator.train(run_config=best_config)
 
 
-test_loss = compensator.test(X_test=X_test, y_test=X_test_reference)
+test_loss = compensator.testAndGetSnapshots(X_test=X_test, y_test=X_test_reference, model_name=best_config.COMPENSATOR_ARCH, data_name="mixed" )
 
-mit_test_loss = compensator.test(X_test=X_test_mit, y_test=X_test_reference_mit)
-
-unovis_test_loss = compensator.test(X_test=X_test_unovis, y_test=X_test_reference_unovis)
+mit_test_loss = compensator.testAndGetSnapshots(X_test=X_test_mit, y_test=X_test_reference_mit, model_name=best_config.COMPENSATOR_ARCH, data_name="mit" )
 
 
+unovis_test_loss = compensator.testAndGetSnapshots(X_test=X_test_unovis, y_test=X_test_reference_unovis, model_name=best_config.COMPENSATOR_ARCH, data_name="unovis" )
 
-print(val_loss)
 print(test_loss)
 print(mit_test_loss)
 print(unovis_test_loss)

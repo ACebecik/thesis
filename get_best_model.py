@@ -9,7 +9,7 @@ import numpy as np
 
 api = wandb.Api()
 wandb.init()
-sweep = api.sweep("alperencebecik-rwth-aachen-university/drdnn-aum-hidden-size-optimization/cnj0a1jj")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/fcn-dae-skip-aum-optimization/4yiejb4j")
 
 # Get best run parameters
 best_run = sweep.best_run(order="")
@@ -17,8 +17,9 @@ best_run = sweep.best_run(order="")
 best_parameters = best_run.config
 print(best_parameters)
 
-dummy_input = torch.Tensor (np.ones((1024,1,120)))
+dummy_input = torch.Tensor (np.ones((1024,1,120))).to(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 classifier_flag = False
+compensator_flag = True
 
 if classifier_flag == True:
     if best_parameters["CLASSIFIER_ARCH"] == "ansari":
@@ -33,6 +34,22 @@ if classifier_flag == True:
         torch.onnx.export(model, dummy_input, "models/lstm_model.onnx")
         wandb.save("lstm_model.onnx")
 
+if compensator_flag == True:
+    if best_parameters["COMPENSATOR_ARCH"] == "fcn-dae":
+        model = FCN_DAE(  p_dropout=best_parameters["DROPOUT"])
+        # Save the model in the exchangeable ONNX format
+        torch.onnx.export(model, dummy_input, "models/fcn_dae_model.onnx")
+        wandb.save("fcn_dae_model.onnx")
+
+    elif best_parameters["COMPENSATOR_ARCH"] == "drdnn":
+        model = DRDNN(lstm_hidden_size= best_parameters["LSTM_HIDDEN_SIZE"] )
+        torch.onnx.export(model, dummy_input, "models/drdnn_model.onnx")
+        wandb.save("drdnn_model.onnx")
+    
+    else:
+        model = FCN_DAE_skip().to(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        torch.onnx.export(model, dummy_input, "models/fcn_dae_skip_model.onnx")
+        wandb.save("fcn_dae_skip_model.onnx")
 
 best_run_values = pd.DataFrame(best_run.history())
 print(list(best_run_values.columns.values))
@@ -67,6 +84,8 @@ plt.savefig ("plots/best_runs/lstm_best_run_loss")
 """
 
 
+"""
+# COMPENSATION PLOT
 
 plt.plot(val_df["compensation_val_loss"], label="Validation Loss")
 plt.plot(train_df["compensation_train_loss"], label = "Training Loss")
@@ -75,3 +94,6 @@ plt.ylabel("Loss")
 plt.legend(loc="best")
 plt.title("Train and Validation Loss - DRDNN")
 plt.savefig ("plots/best_runs/drdnn_best_run_loss")
+
+
+"""

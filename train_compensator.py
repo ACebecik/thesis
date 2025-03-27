@@ -262,5 +262,79 @@ class CompensationTrainer():
         
         return avgTestLoss
 
+
+    def testAndGetSnapshots(self, X_test, y_test, model_name, data_name):
+
+        self.model_name = model_name
+        self.model.load_state_dict(torch.load(f"models/{self.model_name}.pt"))
+        self.X_test_final = X_test
+        self.y_test_final = y_test
+
+        self.testData = CustomDataset(self.X_test_final, self.y_test_final)
+        self.test_size = self.y_test.shape[0]
+
+        # initialize the test data loader
+        self.testDataLoader = DataLoader(self.testData, shuffle=True, batch_size=self.batch_size)
+    
+        # number of steps per epoch 
+        self.no_testSteps = len(self.testDataLoader.dataset) // self.batch_size
+
+        totalTestLoss = 0
+
+        with torch.no_grad():
+                    # set the model in evaluation mode
+            self.model.eval()
+
+
+            # loop over the validation set
+            for X_batch, y_batch in self.testDataLoader:
+                X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
+
+                # send the input to the device
+                (X_batch, y_batch) = (X_batch.to(self.device), y_batch.to(self.device))
+
+                # make the predictions and calculate the validation loss
+                pred = self.model(X_batch)
+                if self.model_name == "drdnn":
+                    pred = torch.unsqueeze(pred,dim=1)
+                
+                lossTest = self.lossFn(pred, y_batch)
+                totalTestLoss = totalTestLoss + lossTest
+
+            avgTestLoss = float(totalTestLoss /self.no_testSteps)
+            print(str.format("Avg Test Loss: {:.6f}", avgTestLoss))
+        
+            indexes = torch.randint(high=self.test_size, size=(100, ))
+
+            for random_seed in indexes:
+                X_snap = torch.unsqueeze(self.X_test[random_seed, :] , dim=0).to(device=self.device) 
+                y_snap = torch.unsqueeze(self.y_test[random_seed, :] , dim=0).to(device=self.device)
+                    
+                X_snap = torch.unsqueeze(X_snap , dim=0) 
+                y_snap = torch.unsqueeze(y_snap , dim=0)
+
+                y_pred_snap = self.model(X_snap)
+                y_pred_snap = torch.squeeze(y_pred_snap)
+                y_pred_snap = torch.unsqueeze(y_pred_snap, dim=1)
+                
+                scaler = MinMaxScaler()
+                y_pred_snap = scaler.fit_transform(y_pred_snap.cpu().detach().numpy())
+
+                X_snap = torch.squeeze(X_snap).cpu().numpy()
+                y_snap = torch.squeeze(y_snap).cpu().numpy()
+                
+
+                plt.plot(y_pred_snap, label="compensated signal")
+                plt.plot(X_snap, label="noisy signal" )
+                plt.plot(y_snap, label="reference clean signal" )
+                plt.legend()
+                plt.savefig(f"snaps/{self.model_name}/{data_name}/snapshot of one segment seed{random_seed}snap.png")
+                plt.clf()
+
+
+        return avgTestLoss
+
+
+
 if __name__ == "__main__":
     pass

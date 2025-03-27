@@ -9,10 +9,10 @@ import numpy as np
 
 api = wandb.Api()
 wandb.init()
-sweep = api.sweep("alperencebecik-rwth-aachen-university/lstm-aum-hidden-size-optimization/mmwdysta")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/drdnn-aum-hidden-size-optimization/cnj0a1jj")
 
 # Get best run parameters
-best_run = sweep.best_run(order="classification_val_acc")
+best_run = sweep.best_run(order="")
 
 best_parameters = best_run.config
 print(best_parameters)
@@ -43,6 +43,7 @@ train_df = train_df.reset_index()
 val_df = best_run_values.iloc[1::2]
 val_df = val_df.reset_index()
 
+"""
 plt.plot(val_df["classification_val_acc"], label="Validation Accuracy")
 plt.plot(train_df["classification_train_acc"], label = "Training Accuracy")
 plt.xlabel("Epochs")
@@ -52,6 +53,7 @@ plt.title("Train and Validation Accuracy - LSTM")
 plt.savefig ("plots/best_runs/lstm_best_run_acc")
 plt.clf()
 
+
 plt.plot(val_df["classification_val_loss"], label="Validation Loss")
 plt.plot(train_df["classification_train_loss"], label = "Training Loss")
 plt.xlabel("Epochs")
@@ -59,3 +61,17 @@ plt.ylabel("Loss")
 plt.legend(loc="best")
 plt.title("Train and Validation Loss - LSTM")
 plt.savefig ("plots/best_runs/lstm_best_run_loss")
+
+
+
+"""
+
+
+
+plt.plot(val_df["compensation_val_loss"], label="Validation Loss")
+plt.plot(train_df["compensation_train_loss"], label = "Training Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend(loc="best")
+plt.title("Train and Validation Loss - DRDNN")
+plt.savefig ("plots/best_runs/drdnn_best_run_loss")

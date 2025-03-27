@@ -38,8 +38,8 @@ import pprint
 
 
 class newconfig:
-    def __init__(self, classifier_arch, compensator_arch, lr, batch_size, dropout,
-                 ansari_hidden_size, lstm_hidden_size):
+    def __init__(self, classifier_arch, compensator_arch, lr, batch_size, dropout = None,
+                 ansari_hidden_size = None, lstm_hidden_size= None):
         self.CLASSIFIER_ARCH =classifier_arch
         self.COMPENSATOR_ARCH = compensator_arch
         self.INIT_LR = lr
@@ -54,7 +54,7 @@ wandb.init(project="drdnn-best-run-newconfig-class")
 sweep = api.sweep("alperencebecik-rwth-aachen-university/drdnn-aum-hidden-size-optimization/cnj0a1jj")
 
 # Get best run parameters
-best_run = sweep.best_run()
+best_run = sweep.best_run(order="")
 
 best_parameters = best_run.config
 model_name_selected = best_parameters["COMPENSATOR_ARCH"]
@@ -112,9 +112,10 @@ best_config = newconfig(classifier_arch= best_parameters["CLASSIFIER_ARCH"],
                         compensator_arch= best_parameters["COMPENSATOR_ARCH"],
                         lr=best_parameters["INIT_LR"],
                         batch_size= best_parameters["BATCH_SIZE"],
-                        dropout=best_parameters["DROPOUT"],
-                        ansari_hidden_size= best_parameters["ANSARI_HIDDEN_SIZE"],
-                        lstm_hidden_size=best_parameters["LSTM_HIDDEN_SIZE"]     )
+                     #    dropout=best_parameters["DROPOUT"],
+                     #   ansari_hidden_size= best_parameters["ANSARI_HIDDEN_SIZE"],
+                        lstm_hidden_size=best_parameters["LSTM_HIDDEN_SIZE"]     
+                     )
 
 
 # set the device we will be using to train the model
@@ -142,8 +143,8 @@ y_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_y.pt")
 
 
 
-
 """
+
 # CLASSIFICATION
 
 classifier = ClassificationTrainer(lr=run_config["INIT_LR"], 

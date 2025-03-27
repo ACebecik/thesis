@@ -186,7 +186,7 @@ class CompensationTrainer():
             endTime = time.time()
             print("[INFO] total time taken to train the model: {:.2f}s".format(endTime - startTime))
             
-        torch.save(self.model.state_dict(), "models/drdnn.pt")
+        torch.save(self.model.state_dict(), f"models/{self.model_name}.pt")
         return avgValLoss
 
     def getRawResults(self):
@@ -222,7 +222,7 @@ class CompensationTrainer():
 
     def test(self,  X_test, y_test):
 
-        self.model.load_state_dict(torch.load("models/drdnn.pt"))
+        self.model.load_state_dict(torch.load(f"models/{self.model_name}.pt"))
         self.X_test_final = X_test
         self.y_test_final = y_test
 

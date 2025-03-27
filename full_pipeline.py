@@ -105,6 +105,52 @@ def testClassifier(model_name, model, X_test, y_test):
 
     return avgTestLoss, avgTestAcc, test_conf_matrix 
 
+def applyCompensation(model_name, model, X_test, y_test):
+    
+    if model_name == "drdnn":
+        batch_size = 1728
+    elif model_name == "fcn-dae":
+        batch_size = 1088
+    else:
+        batch_size = 1472
+
+    testData = CustomDataset(X_test, y_test)
+    test_size = y_test.shape[0]
+
+    # initialize the test data loader
+    testDataLoader = DataLoader(testData, shuffle=True, batch_size=batch_size)
+
+    # number of steps per epoch 
+    no_testSteps = len(testDataLoader.dataset) // batch_size
+
+    totalTestLoss = 0
+    lossFn = nn.MSELoss()
+
+    with torch.no_grad():
+                # set the model in evaluation mode
+        model.eval()
+
+        # loop over the validation set
+        for X_batch, y_batch in testDataLoader:
+            X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
+
+            # send the input to the device
+            (X_batch, y_batch) = (X_batch.to(device), y_batch.to(device))
+
+            # make the predictions and calculate the validation loss
+            pred = model(X_batch)
+            if model_name == "drdnn":
+                pred = torch.unsqueeze(pred,dim=1)
+            
+            lossTest = lossFn(pred, y_batch)
+            totalTestLoss = totalTestLoss + lossTest
+
+        avgTestLoss = float(totalTestLoss /no_testSteps)
+        print(str.format("Avg Test Loss: {:.6f}", avgTestLoss))
+
+    return avgTestLoss
+
+
 if __name__ == "__main__":
 
     X_test = torch.load("tensors/final_tensors_1703/um_test_X.pt")
@@ -125,8 +171,7 @@ if __name__ == "__main__":
     ansari_model = loadModel("ansari", device=device)
     fcn_dae_model = loadModel("fcn-dae", device=device)
 
-    testClassifier("ansari", ansari_model, X_test=X_test_unovis, y_test=y_test_unovis)
-
-
+   # ansari_loss, ansari_acc, ansari_conf =  testClassifier("ansari", ansari_model, X_test=X_test, y_test=y_test)
+    comp_loss = applyCompensation("fcn-dae", fcn_dae_model, X_test=X_test_unovis, y_test=X_test_reference_unovis)
 
 

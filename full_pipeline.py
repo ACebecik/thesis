@@ -51,7 +51,7 @@ def loadModel(model_name, device):
     model.load_state_dict(torch.load(f"models/{model_name}.pt"))
     return model
 
-def testClassifier(model_name, model, X_test, y_test):
+def testClassifier(model_name, model, X_test, y_test, X_test_reference):
     
     if model_name == "ansari":
         batch_size = 1728
@@ -77,6 +77,7 @@ def testClassifier(model_name, model, X_test, y_test):
         batch_counter = 0
         lossFn = nn.BCEWithLogitsLoss()
 
+        init_tensor = True
         # loop over the validation set
         for X_batch, y_batch in testDataLoader:
             X_batch, y_batch  = torch.unsqueeze(X_batch,1), torch.unsqueeze(y_batch,1)
@@ -91,19 +92,35 @@ def testClassifier(model_name, model, X_test, y_test):
             predProbTest = getPreds(pred)
             totalTestLoss = totalTestLoss + lossTest
             test_acc = test_acc + ((predProbTest>0.5)==y_batch).sum()
+            incorrect_indexes = (predProbTest>0.5)!=y_batch
 
+            batch_counter = batch_counter +1
+
+            for idx in range(len(incorrect_indexes)):
+                if (batch_counter*batch_size + idx) > X_test.shape[0] - 100 :
+                    break
+                if incorrect_indexes[idx]:
+                    if init_tensor:
+                        incorrect_segments = X_batch[idx, :] 
+                        labels_for_incorrect_segments = y_batch[idx] 
+                        reference_segment_for_incorrect = torch.unsqueeze(X_test_reference[batch_counter*batch_size + idx, :], dim=0) 
+                        init_tensor = False
+                        continue
+                    incorrect_segments = torch.cat((incorrect_segments, X_batch[idx, :]))
+                    labels_for_incorrect_segments = torch.cat((labels_for_incorrect_segments, y_batch[idx] ))
+                    reference_segment_for_incorrect = torch.cat((reference_segment_for_incorrect, torch.unsqueeze(X_test_reference[batch_counter*batch_size + idx, :], dim=0) ))
+    
         # confusion matrix 
             predictions = (predProbTest>0.5)*1
             temp_conf_matrix = confusion_matrix(y_batch.cpu().numpy(), predictions.cpu().numpy())
             test_conf_matrix = np.add(test_conf_matrix, temp_conf_matrix)
 
 
-
     avgTestAcc = float(test_acc/test_size)
     avgTestLoss = float(totalTestLoss /no_testSteps)
     print(str.format("Avg Test Loss: {:.6f}, Avg Test Acc: {:.6f}", avgTestLoss, avgTestAcc))
 
-    return avgTestLoss, avgTestAcc, test_conf_matrix 
+    return avgTestLoss, avgTestAcc, test_conf_matrix, incorrect_segments, labels_for_incorrect_segments, reference_segment_for_incorrect 
 
 def applyCompensation(model_name, model, X_test, y_test):
     
@@ -125,10 +142,13 @@ def applyCompensation(model_name, model, X_test, y_test):
 
     totalTestLoss = 0
     lossFn = nn.MSELoss()
+    
 
     with torch.no_grad():
                 # set the model in evaluation mode
         model.eval()
+
+        initial_batch = True
 
         # loop over the validation set
         for X_batch, y_batch in testDataLoader:
@@ -144,11 +164,16 @@ def applyCompensation(model_name, model, X_test, y_test):
             
             lossTest = lossFn(pred, y_batch)
             totalTestLoss = totalTestLoss + lossTest
+            if initial_batch:
+                compensated_segments = pred
+                initial_batch = False
+                continue
+            compensated_segments = torch.cat((compensated_segments, pred))
 
         avgTestLoss = float(totalTestLoss /no_testSteps)
         print(str.format("Avg Test Loss: {:.6f}", avgTestLoss))
 
-    return avgTestLoss
+    return avgTestLoss, torch.squeeze (compensated_segments)
 
 
 if __name__ == "__main__":
@@ -167,11 +192,15 @@ if __name__ == "__main__":
     y_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_y.pt")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+    lstm_model = loadModel("lstm", device=device)
     ansari_model = loadModel("ansari", device=device)
     fcn_dae_model = loadModel("fcn-dae", device=device)
 
-   # ansari_loss, ansari_acc, ansari_conf =  testClassifier("ansari", ansari_model, X_test=X_test, y_test=y_test)
-    comp_loss = applyCompensation("fcn-dae", fcn_dae_model, X_test=X_test_unovis, y_test=X_test_reference_unovis)
+    ansari_loss, ansari_acc, ansari_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("ansari", ansari_model, X_test=X_test_unovis, y_test=y_test_unovis, X_test_reference=X_test_reference_unovis)
+    print(ansari_conf)
+    comp_loss, compensated_segments = applyCompensation("fcn-dae", fcn_dae_model, X_test=compensation_segments, y_test=reference_segments)
+
+    ansari_loss, ansari_acc, ansari_conf, _,_,_ =  testClassifier("ansari", ansari_model, X_test=compensated_segments, y_test=compensation_targets, X_test_reference=reference_segments)
+    print(ansari_conf)
 
 

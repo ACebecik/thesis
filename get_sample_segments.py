@@ -8,7 +8,7 @@ import random
 
 if __name__ == "__main__":
     
-    db = "unovis"
+    db = "mit"
 
     if db == "mit": 
 
@@ -34,12 +34,12 @@ if __name__ == "__main__":
 
                 if mit_noisy_ecg_labels[rand_patient_key][rand_segment_idx] == 0 and plotted_unusable == False:
                     
-                    fig = plt.figure(facecolor="y")
+                    fig = plt.figure()
                     plt.plot(mit_noisy_ecg[rand_patient_key][rand_segment_idx, :], label="unusable segment")
                     plt.plot(mit_reference_ecg[rand_patient_key][rand_segment_idx, :] , label="reference segment" )
                     plt.legend(loc="best")
-                    plt.xlabel("Time")
-                    plt.ylabel("Amplitude")
+                    plt.xlabel("# Sample ")
+                    plt.ylabel("Scaled Amplitude")
                     plt.title("Example Unusable Segment from MIT Database")
                     plt.savefig ("sample_segments/mit_unusable_segment.png")
                     plt.clf()
@@ -49,12 +49,12 @@ if __name__ == "__main__":
 
                 elif mit_noisy_ecg_labels[rand_patient_key][rand_segment_idx] == 1 and plotted_usable == False:
                     
-                    fig = plt.figure(facecolor="g")
+                    fig = plt.figure()
                     plt.plot(mit_noisy_ecg[rand_patient_key][rand_segment_idx, :], label="usable segment")
                     plt.plot(mit_reference_ecg[rand_patient_key][rand_segment_idx, :] , label="reference segment" )
                     plt.legend(loc="best")
-                    plt.xlabel("Time")
-                    plt.ylabel("Amplitude")
+                    plt.xlabel("# Sample ")
+                    plt.ylabel("Scaled Amplitude")
                     plt.title("Example Usable Segment from MIT Database")
                     plt.savefig ("sample_segments/mit_usable_segment.png")
                     plt.clf()
@@ -88,12 +88,12 @@ if __name__ == "__main__":
 
                 if unovis_noisy_ecg_labels[rand_patient_key][rand_segment_idx] == 0 and plotted_unusable == False:
                     
-                    fig = plt.figure(facecolor="y")
+                    fig = plt.figure()
                     plt.plot(unovis_noisy_ecg[rand_patient_key][rand_segment_idx, :], label="unusable segment")
                     plt.plot(unovis_reference_ecg[rand_patient_key][rand_segment_idx, :] , label="reference segment" )
                     plt.legend(loc="best")
-                    plt.xlabel("Time")
-                    plt.ylabel("Amplitude")
+                    plt.xlabel("# Sample")
+                    plt.ylabel("Scaled Amplitude")
                     plt.title("Example Unusable Segment from UnoViS Database")
                     plt.savefig ("sample_segments/unovis_unusable_segment.png")
                     plt.clf()
@@ -103,12 +103,12 @@ if __name__ == "__main__":
 
                 elif unovis_noisy_ecg_labels[rand_patient_key][rand_segment_idx] == 1 and plotted_usable == False:
                     
-                    fig = plt.figure(facecolor="g")
+                    fig = plt.figure()
                     plt.plot(unovis_noisy_ecg[rand_patient_key][rand_segment_idx, :], label="usable segment")
                     plt.plot(unovis_reference_ecg[rand_patient_key][rand_segment_idx, :] , label="reference segment" )
                     plt.legend(loc="best")
-                    plt.xlabel("Time")
-                    plt.ylabel("Amplitude")
+                    plt.xlabel("# Sample")
+                    plt.ylabel("Scaled Amplitude")
                     plt.title("Example Usable Segment from UnoViS Database")
                     plt.savefig ("sample_segments/unovis_usable_segment.png")
                     plt.clf()

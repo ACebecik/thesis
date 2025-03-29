@@ -198,9 +198,15 @@ if __name__ == "__main__":
 
     ansari_loss, ansari_acc, ansari_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("ansari", ansari_model, X_test=X_test_unovis, y_test=y_test_unovis, X_test_reference=X_test_reference_unovis)
     print(ansari_conf)
+
     comp_loss, compensated_segments = applyCompensation("fcn-dae", fcn_dae_model, X_test=compensation_segments, y_test=reference_segments)
 
-    ansari_loss, ansari_acc, ansari_conf, _,_,_ =  testClassifier("ansari", ansari_model, X_test=compensated_segments, y_test=compensation_targets, X_test_reference=reference_segments)
-    print(ansari_conf)
+    plt_idx = 31
+    plt.plot(compensation_segments[plt_idx, :].cpu(), label = "noisy" )
+    plt.plot(reference_segments[plt_idx, :].cpu(), label="ref")
+    plt.plot(compensated_segments[plt_idx, :].cpu(), label="compensated" )
+    plt.legend()
+    plt.savefig("temp")
+    
 
 

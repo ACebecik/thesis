@@ -17,7 +17,7 @@ best_run = sweep.best_run(order="")
 best_parameters = best_run.config
 print(best_parameters)
 
-dummy_input = torch.Tensor (np.ones((1024,1,120))).to(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+dummy_input = torch.Tensor (np.ones((1024,1,120))).to(device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
 classifier_flag = False
 compensator_flag = True
 
@@ -47,7 +47,8 @@ if compensator_flag == True:
         wandb.save("drdnn_model.onnx")
     
     else:
-        model = FCN_DAE_skip().to(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        model = FCN_DAE_skip().to(device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        model.load_state_dict(torch.load(f"models/fcn-dae-skip.pt"))
         torch.onnx.export(model, dummy_input, "models/fcn_dae_skip_model.onnx")
         wandb.save("fcn_dae_skip_model.onnx")
 

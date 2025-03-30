@@ -248,8 +248,8 @@ class FCN_DAE_skip(nn.Module):
         return x
 
 if __name__ == "__main__":
-    model_temp = FCN_DAE_skip()
-    X = torch.Tensor (np.ones((1024,1,120)))
+    model_temp = FCN_DAE_skip().to(device="cuda:0")
+    X = torch.Tensor (np.ones((1024,1,120))).to(device="cuda:0")
     model_temp.forward(X)
 
     

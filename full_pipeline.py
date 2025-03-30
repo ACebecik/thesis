@@ -196,12 +196,16 @@ if __name__ == "__main__":
     ansari_model = loadModel("ansari", device=device)
     fcn_dae_model = loadModel("fcn-dae", device=device)
     drdnn_model = loadModel("drdnn", device=device)
+    fcn_dae_skip_model = loadModel("fcn-dae-skip", device=device)
   #  ansari_loss, ansari_acc, ansari_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("ansari", ansari_model, X_test=X_test_unovis, y_test=y_test_unovis, X_test_reference=X_test_reference_unovis)
   #  print(ansari_conf)
 
-    lstm_loss, lstm_acc, lstm_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("lstm", lstm_model, X_test=X_test_mit, y_test=y_test_mit, X_test_reference=X_test_reference_mit)
-    print(lstm_conf)
-    #  comp_loss, compensated_segments = applyCompensation("fcn-dae", fcn_dae_model, X_test=compensation_segments, y_test=reference_segments)
+  #  lstm_loss, lstm_acc, lstm_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("lstm", lstm_model, X_test=X_test_mit, y_test=y_test_mit, X_test_reference=X_test_reference_mit)
+ #  comp_loss, compensated_segments = applyCompensation("fcn-dae", fcn_dae_model, X_test=compensation_segments, y_test=reference_segments)
+    comp_loss, compensated_segments = applyCompensation("fcn-dae-skip", fcn_dae_skip_model, X_test=X_test_unovis, y_test=X_test_reference_unovis)
+    print(comp_loss)
+
+
 """
     plt_idx = 31
     plt.plot(compensation_segments[plt_idx, :].cpu(), label = "noisy" )

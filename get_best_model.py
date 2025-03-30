@@ -48,7 +48,7 @@ if compensator_flag == True:
     
     else:
         model = FCN_DAE_skip().to(device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-        model.load_state_dict(torch.load(f"models/fcn-dae-skip.pt"))
+       # model.load_state_dict(torch.load(f"models/fcn-dae-skip.pt"))
         torch.onnx.export(model, dummy_input, "models/fcn_dae_skip_model.onnx")
         wandb.save("fcn_dae_skip_model.onnx")
 

@@ -156,6 +156,35 @@ class FCN_DAE_skip(nn.Module):
         self.avgpool40 = nn.AvgPool1d(kernel_size=40)
         self.avgpool80 = nn.AvgPool1d(kernel_size=80)
 
+        self.adp_maxpool = nn.AdaptiveMaxPool1d(output_size=1).to(torch.device("cuda:0"))
+        self.adp_avgpool = nn.AdaptiveAvgPool1d(output_size=1).to(torch.device("cuda:0"))
+
+        self.adp_avgpool_chn = nn.AdaptiveAvgPool1d(output_size=1).to(torch.device("cuda:0"))
+        self.max_avgpool_chn = nn.AdaptiveMaxPool1d(output_size=1).to(torch.device("cuda:0"))
+
+        self.linear20_avg = nn.Linear(in_features=1, out_features=20).to(torch.device("cuda:0"))
+        self.linear20_max = nn.Linear(in_features=1, out_features=20).to(torch.device("cuda:0"))
+        self.linear20_avg_rev = nn.Linear(in_features=20, out_features=1).to(torch.device("cuda:0"))
+        self.linear20_max_rev = nn.Linear(in_features=20, out_features=1).to(torch.device("cuda:0"))
+
+
+        self.linear40_avg = nn.Linear(in_features=1, out_features=40).to(torch.device("cuda:0"))
+        self.linear40_max = nn.Linear(in_features=1, out_features=40).to(torch.device("cuda:0"))
+        self.linear40_avg_rev = nn.Linear(in_features=40, out_features=1).to(torch.device("cuda:0"))
+        self.linear40_max_rev = nn.Linear(in_features=40, out_features=1).to(torch.device("cuda:0"))
+
+        self.linear80_avg = nn.Linear(in_features=1, out_features=80).to(torch.device("cuda:0"))
+        self.linear80_max = nn.Linear(in_features=1, out_features=80).to(torch.device("cuda:0"))
+        self.linear80_avg_rev = nn.Linear(in_features=80, out_features=1).to(torch.device("cuda:0"))
+        self.linear80_max_rev = nn.Linear(in_features=80, out_features=1).to(torch.device("cuda:0"))
+
+
+        self.att_conv20 = nn.Conv1d(in_channels=2, out_channels=1, kernel_size=1).to(torch.device("cuda:0"))
+        self.att_conv40 = nn.Conv1d(in_channels=2, out_channels=1, kernel_size=1).to(torch.device("cuda:0"))
+        self.att_conv80 = nn.Conv1d(in_channels=2, out_channels=1, kernel_size=1).to(torch.device("cuda:0"))
+
+
+        
     def dual_attention(self, x, layer_no):
         
         channel_attention = self.global_attention(x,layer_no=layer_no)
@@ -166,17 +195,41 @@ class FCN_DAE_skip(nn.Module):
     def global_attention(self, x, layer_no):
     
        # global max and avg poolings per the channels
-        self.adp_maxpool = nn.AdaptiveMaxPool1d(output_size=1).to(torch.device("cuda:0"))
-        self.adp_avgpool = nn.AdaptiveAvgPool1d(output_size=1).to(torch.device("cuda:0"))
 
         x_avgpooled = self.adp_avgpool(x.permute(0,2,1))
         x_maxpooled = self.adp_maxpool(x.permute(0,2,1))
 
-        self.linear1 = nn.Linear(in_features=1, out_features=layer_no).to(torch.device("cuda:0"))
-        x_avgpooled = self.linear1(x_avgpooled)
+        if layer_no == 20:
+        
+            x_avgpooled = self.linear20_avg(x_avgpooled)
+            x_maxpooled = self.linear20_max(x_maxpooled)
 
-        self.linear2 = nn.Linear(in_features=1, out_features=layer_no).to(torch.device("cuda:0"))
-        x_maxpooled = self.linear2(x_maxpooled)
+            x_avgpooled = self.relu(x_avgpooled)
+            x_maxpooled = self.relu(x_maxpooled)
+
+            x_avgpooled = self.linear20_avg_rev(x_avgpooled)
+            x_maxpooled = self.linear20_max_rev(x_maxpooled)
+        
+        elif layer_no == 40:
+
+            x_avgpooled = self.linear40_avg(x_avgpooled)
+            x_maxpooled = self.linear40_max(x_maxpooled)
+            
+            x_avgpooled = self.relu(x_avgpooled)
+            x_maxpooled = self.relu(x_maxpooled)
+
+            x_avgpooled = self.linear40_avg_rev(x_avgpooled)
+            x_maxpooled = self.linear40_max_rev(x_maxpooled)
+        
+        else:
+            x_avgpooled = self.linear80_avg(x_avgpooled)
+            x_maxpooled = self.linear80_max(x_maxpooled)
+        
+            x_avgpooled = self.relu(x_avgpooled)
+            x_maxpooled = self.relu(x_maxpooled)
+
+            x_avgpooled = self.linear80_avg_rev(x_avgpooled)
+            x_maxpooled = self.linear80_max_rev(x_maxpooled)
 
         x = x_avgpooled + x_maxpooled
         sigmoid1 = nn.Sigmoid().to(torch.device("cuda:0"))
@@ -187,25 +240,27 @@ class FCN_DAE_skip(nn.Module):
 
     def spatial_attention(self,x,layer_no):
         
-        self.adp_avgpool_chn = nn.AdaptiveAvgPool2d(output_size=(1,1)).to(torch.device("cuda:0"))
-        self.max_avgpool_chn = nn.AdaptiveMaxPool2d(output_size=(1,1)).to(torch.device("cuda:0"))
-
         x_avgpooled = self.adp_avgpool_chn(x)
         x_maxpooled = self.max_avgpool_chn(x)
 
        # stack along features 
         temp = torch.stack((x_avgpooled, x_maxpooled), dim=1)
         temp = torch.squeeze(temp)
-        temp = torch.unsqueeze(temp, dim=-1)
+        
 
-       # temp shape 1024, 2,1
-        att_conv1 = nn.Conv1d(in_channels=2, out_channels=layer_no, kernel_size=1).to(torch.device("cuda:0"))
-        temp = att_conv1(temp)
+        if layer_no == 20:
+            temp = self.att_conv20(temp)
+
+        elif layer_no == 40 :
+            temp = self.att_conv40(temp)
+        
+        else:
+            temp = self.att_conv80(temp)
 
         sigm = nn.Sigmoid().to(torch.device("cuda:0"))
         temp = sigm(temp)
 
-        return temp
+        return temp.permute(0,2,1)
 
     def forward(self,x):
 

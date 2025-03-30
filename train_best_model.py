@@ -50,8 +50,8 @@ class newconfig:
 
 
 api = wandb.Api()
-wandb.init(project="fcn-dae-best-run-newconfig-class")
-sweep = api.sweep("alperencebecik-rwth-aachen-university/fcn-dae-dropout-aum-optimization/u4cx8sll")
+wandb.init(project="fcn-dae-skip-best-run-newconfig-class")
+sweep = api.sweep("alperencebecik-rwth-aachen-university/fcn-dae-skip-aum-optimization/4yiejb4j")
 
 # Get best run parameters
 best_run = sweep.best_run(order="")
@@ -112,7 +112,7 @@ best_config = newconfig(classifier_arch= best_parameters["CLASSIFIER_ARCH"],
                         compensator_arch= best_parameters["COMPENSATOR_ARCH"],
                         lr=best_parameters["INIT_LR"],
                         batch_size= best_parameters["BATCH_SIZE"],
-                        dropout=best_parameters["DROPOUT"],
+                     #   dropout=best_parameters["DROPOUT"],
                      #   ansari_hidden_size= best_parameters["ANSARI_HIDDEN_SIZE"],
                    #     lstm_hidden_size=best_parameters["LSTM_HIDDEN_SIZE"]     
                      )

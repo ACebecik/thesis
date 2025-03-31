@@ -182,7 +182,6 @@ if __name__ == "__main__":
     y_test = torch.load("tensors/final_tensors_1703/um_test_y.pt")
     X_test_reference = torch.load("tensors/final_tensors_1703/um_reference_test_X.pt")
 
-
     X_test_reference_mit = torch.load("tensors/final_tensors_1703/mit_reference_test_X.pt")
     X_test_mit = torch.load("tensors/final_tensors_1703/mit_test_X.pt")
     y_test_mit = torch.load("tensors/final_tensors_1703/mit_test_y.pt")
@@ -191,19 +190,31 @@ if __name__ == "__main__":
     X_test_reference_unovis = torch.load("tensors/final_tensors_1703/unovis_reference_test_X.pt")
     y_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_y.pt")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    y_train = torch.load("tensors/final_tensors_1703/augmented_um_train_y.pt")
+    y_validation = torch.load("tensors/final_tensors_1703/um_validation_y.pt")
 
+    print(f"Unified train set usable examples{sum(y_train)}, unusable examples{len(y_train) - sum(y_train)}, total examples{len(y_train)}     ")
+    print(f"Unified val set usable examples{sum(y_validation)}, unusable examples{len(y_validation) - sum(y_validation)}, total examples{len(y_validation)}     ")
+
+
+"""
+    print(f"Unified test set usable examples{sum(y_test)}, unusable examples{len(y_test) - sum(y_test)}, total examples{len(y_test)}     ")
+    print(f"MIT test set usable examples{sum(y_test_mit)}, unusable examples{len(y_test_mit) - sum(y_test_mit)}, total examples{len(y_test_mit)}     ")
+    print(f"UNOVIS test set usable examples{sum(y_test_unovis)}, unusable examples{len(y_test_unovis) - sum(y_test_unovis)}, total examples{len(y_test_unovis)}     ")
+
+"""
+"""
     lstm_model = loadModel("lstm", device=device)
     ansari_model = loadModel("ansari", device=device)
     fcn_dae_model = loadModel("fcn-dae", device=device)
     drdnn_model = loadModel("drdnn", device=device)
-    fcn_dae_skip_model = loadModel("fcn-dae-skip", device=device)
+    fcn_dae_skip_model = loadModel("fcn-dae-skip", device=device)"""
   #  ansari_loss, ansari_acc, ansari_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("ansari", ansari_model, X_test=X_test_unovis, y_test=y_test_unovis, X_test_reference=X_test_reference_unovis)
   #  print(ansari_conf)
 
   #  lstm_loss, lstm_acc, lstm_conf, compensation_segments, compensation_targets, reference_segments =  testClassifier("lstm", lstm_model, X_test=X_test_mit, y_test=y_test_mit, X_test_reference=X_test_reference_mit)
  #  comp_loss, compensated_segments = applyCompensation("fcn-dae", fcn_dae_model, X_test=compensation_segments, y_test=reference_segments)
-    comp_loss, compensated_segments = applyCompensation("fcn-dae-skip", fcn_dae_skip_model, X_test=X_test_unovis, y_test=X_test_reference_unovis)
-    print(comp_loss)
+  #  comp_loss, compensated_segments = applyCompensation("fcn-dae-skip", fcn_dae_skip_model, X_test=X_test_unovis, y_test=X_test_reference_unovis)
 
 
 """

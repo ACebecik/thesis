@@ -20,91 +20,180 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from custom_dataset_for_dataloader import CustomDataset
-from classification_models import NoiseDetector
-from load_data_from_tensors import LoadDataFromTensor
+from classification_models import NoiseDetector, LSTMClassifier
+from OLD_load_data_from_tensors import LoadDataFromTensor
 from train import ClassificationTrainer
 from plotter import Plotter
 from train_compensator import CompensationTrainer
 from load_data_from_dicts import LoadDataFromDicts
+import wandb
+import pprint
+
+
 
 if __name__ == "__main__":
 
-    # define training hyperparameters
-    INIT_LR = 5e-4
-    BATCH_SIZE = 16384
-    EPOCHS = 100
-    CHOSEN_DATASET = "um"
-    RANDOM_SEED = 31
-    TEST_SIZE = 0.2
+    wandb.login()
+
+    # define training hyperparameters as a config dict
+    run_config = dict(
+        INIT_LR = 5e-4,
+        BATCH_SIZE = 4096,
+        EPOCHS = 50,
+        CHOSEN_DATASET = "um",
+        RANDOM_SEED = 31,
+        TEST_SIZE = 0.2,
+        COMPENSATOR_ARCH = "fcn-dae",
+        CLASSIFIER_ARCH = "lstm"
+    )
+   # wandb.init(project="test_run")
+   # wandb.config = run_config
+
+    sweep_config ={
+        "method": "random",
+        "program": "nxm_quality_assessment.py" 
+    } 
+    
+
+    metric ={
+       # "name": "compensation_val_loss",
+       "name": "classification_val_loss",
+        "goal": "minimize"
+    } 
+
+    sweep_config["metric"] = metric
+
+    parameters_dict = {
+        "CLASSIFIER_ARCH":{
+           # "values" : ["lstm", "ansari"]  
+           "values" : ["ansari"]  
+        } ,
+        'COMPENSATOR_ARCH': {
+          #  'values': ['fcn-dae', "fcn-dae-skip", "drdnn"]
+            "values" :["fcn-dae"] 
+                },
+        'INIT_LR': {
+            "distribution": "log_uniform_values",
+            "max": 0.1,
+            "min": 0.00001,
+            },
+        "BATCH_SIZE":{
+            "distribution": "q_log_uniform_values",
+            "max": 8192,
+            "min": 1024,
+            "q": 64, 
+        },
+        "DROPOUT":{
+            "values" :[0.1, 0.2, 0.3, 0.4] 
+        },
+        "ANSARI_HIDDEN_SIZE":{
+            "values": [1024, 2048, 4096] 
+        },
+        "LSTM_HIDDEN_SIZE":{
+            "values": [120, 240, 360] 
+        }  
+    } 
+
+    sweep_config['parameters'] = parameters_dict
+
+    pprint.pprint(sweep_config)
+
 
     # set the device we will be using to train the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    """
-    # load the data from saved tensors
-        tensorLoader = LoadDataFromDicts(chosen_dataset=CHOSEN_DATASET, 
-                                        random_seed=RANDOM_SEED,
-                                        test_size=TEST_SIZE)
-        tensorLoader.load()
+
+    X_train = torch.load("tensors/final_tensors_1703/augmented_um_train_X.pt")
+    X_test = torch.load("tensors/final_tensors_1703/um_test_X.pt")
+    X_train_reference = torch.load("tensors/final_tensors_1703/augmented_um_reference_train_X.pt")
+    X_test_reference = torch.load("tensors/final_tensors_1703/um_reference_test_X.pt")
+
+    y_train = torch.load("tensors/final_tensors_1703/augmented_um_train_y.pt")
+    y_test = torch.load("tensors/final_tensors_1703/um_test_y.pt")
+
+    X_validation = torch.load("tensors/final_tensors_1703/um_validation_X.pt")
+    y_validation = torch.load("tensors/final_tensors_1703/um_validation_y.pt")
+    X_validation_reference = torch.load("tensors/final_tensors_1703/um_reference_validation_X.pt")    
     
-        classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
-                                        X_train=tensorLoader.X_train,
-                                        y_train=tensorLoader.y_train,
-                                        X_test=tensorLoader.X_test,
-                                        y_test=tensorLoader.y_test
-                                        )"""
 
-    X_train = torch.load("tensors/patient_based/um_train_X.pt")
-    X_test = torch.load("tensors/patient_based/um_test_X.pt")
-    X_train_reference = torch.load("tensors/patient_based/um_reference_train_X.pt")
-    X_test_reference = torch.load("tensors/patient_based/um_reference_test_X.pt")
+    X_test_reference_mit = torch.load("tensors/final_tensors_1703/mit_reference_test_X.pt")
+    X_test_mit = torch.load("tensors/final_tensors_1703/mit_test_X.pt")
 
-    y_train = torch.load("tensors/patient_based/um_train_y.pt")
-    y_test = torch.load("tensors/patient_based/um_test_y.pt")
+    X_test_unovis = torch.load("tensors/final_tensors_1703/unovis_test_X.pt")
+    X_test_reference_unovis = torch.load("tensors/final_tensors_1703/unovis_reference_test_X.pt")
+    
 
-    """
-        classifier = ClassificationTrainer(lr=INIT_LR, batch_size=BATCH_SIZE, no_epochs=EPOCHS,
+    classifier = ClassificationTrainer(lr=run_config["INIT_LR"], 
+                                        batch_size=run_config["BATCH_SIZE"], 
+                                        no_epochs=run_config["EPOCHS"], 
+                                        model_name=run_config["CLASSIFIER_ARCH"],
                                         X_train=X_train,
                                         y_train=y_train,
                                         X_test=X_test,
-                                        y_test=y_test
+                                        y_test=y_test,
+                                        X_test_reference=X_test_reference
                                         )
         
-        classifier.train()
-        results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
-        best_confusion_matrix = classifier.getBestConfusionMatrix()
+   # classifier.train()
+   # results_train_acc, results_train_loss, results_val_acc, results_val_loss = classifier.getRawResults()
+   # best_confusion_matrix = classifier.getBestConfusionMatrix()
 
-        plotter = Plotter(dataset=CHOSEN_DATASET, seed=RANDOM_SEED, lr=INIT_LR, batch_size=BATCH_SIZE)
+
+    compensator = CompensationTrainer(lr=run_config["INIT_LR"],
+                                        batch_size=run_config["BATCH_SIZE"],
+                                        no_epochs=run_config["EPOCHS"],
+                                        model_arch=run_config["COMPENSATOR_ARCH"] ,
+                                        X_train=X_train,
+                                        y_train=X_train_reference, 
+                                        X_test=X_validation,
+                                        y_test=X_validation_reference)
+
+   # compensator.train()
+
+
+   # sweep_id = wandb.sweep(sweep_config, project="augmented-dataset-comparison-run")
+
+   # wandb.agent(sweep_id, compensator.train, count=1)
+
+    sweep_id = wandb.sweep(sweep_config, project="fcn-dae-dropout-aum-optimization")
+
+    wandb.agent(sweep_id, compensator.train, count=50)
+
+    """ 
+
+  #  COMPENSATION PLOTTING
+
+        comp_results_train_loss, comp_results_val_loss = compensator.getRawResults()
+                
+        plt.plot(comp_results_train_loss, label='Train Loss')
+        plt.plot(comp_results_val_loss, label=' Val Loss')
+
+        plt.xlabel('Epochs')
+        plt.ylabel("Loss")
+        plt.title('Compensation Loss')
+        plt.legend()
+        plt.savefig(f"plots/newdatasetLoss.png")
+        plt.clf()
+        
+        
+        zero_idx_list = np.arange(2000,60000,100)
+        max_snaps = 100
+        snap_counter = 0
+        for i in zero_idx_list:
+            if snap_counter == max_snaps:
+                break        
+            compensator.getRandomSnapshot(random_seed=i)
+            snap_counter = snap_counter + 1
+        """
+
+
+    """ 
+
+   # CLASSIFICATION PLOTTING
+       
+        classification_train_acc, classification_train_loss, classification_val_acc, classification_val_loss = classifier.getRawResults()
+   # best_confusion_matrix = classifier.getBestConfusionMatrix()
+        plotter = Plotter(dataset=run_config["CHOSEN_DATASET"] , seed=run_config["RANDOM_SEED"] , 
+                        lr=run_config["INIT_LR"] , batch_size=run_config["BATCH_SIZE"] )
         plotter.plot_accuracy(results_train_acc,results_val_acc)
         plotter.plot_loss(results_train_loss, results_val_loss)
         plotter.plot_confusion_matrix(best_confusion_matrix)"""
-
-   # compensation_X_test, compensation_y_test = classifier.getCompensationSegments()
-
-   # tensorLoader.loadClean()
-
-    compensator = CompensationTrainer(lr=INIT_LR,
-                                      batch_size=BATCH_SIZE,
-                                      no_epochs=EPOCHS,
-                                      X_train=X_train,
-                                      y_train=X_train_reference, 
-                                      X_test=X_test,
-                                      y_test=X_test_reference)
-    compensator.train()
-    
-    comp_results_train_loss, comp_results_test_loss = compensator.getRawResults()
-
-    plt.plot(comp_results_train_loss, label='Train Loss')
-    plt.plot(comp_results_test_loss, label='Val Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel("Loss")
-    plt.title('Loss')
-    plt.legend()
-    plt.savefig(f"Normalized_Compensation_test_LOSS.png")
-    plt.clf()
-    
-    for i in (range(200,1200,20)):
-        try:
-            compensator.getRandomSnapshot(random_seed=i)
-        except:
-            print(f"Snapshot failed for seed {i} ")
-

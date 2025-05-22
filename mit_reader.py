@@ -41,8 +41,8 @@ class mitReader():
         self.patient_indexes = [] 
 
     def loadRecords(self):
-        records_file = open("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/RECORDS")
-        noise_em = wfdb.rdrecord("/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/nstdb/1.0.0/em").p_signal
+        records_file = open("data/physionet.org/files/mitdb/1.0.0/RECORDS")
+        noise_em = wfdb.rdrecord("data/physionet.org/files/nstdb/1.0.0/em").p_signal
         noise_perc = 0.3
 
         name = ""
@@ -51,7 +51,7 @@ class mitReader():
                 continue
             name = name+char
             if len(name) == 3:
-                self.clean_signals[name] = wfdb.rdrecord(f"/media/medit-student/Volume/alperen/repo-clone/thesis/data/physionet.org/files/mitdb/1.0.0/{name}").p_signal
+                self.clean_signals[name] = wfdb.rdrecord(f"data/physionet.org/files/mitdb/1.0.0/{name}").p_signal
                 self.noisy_signals[name] = self.clean_signals[name]*(1-noise_perc)  + noise_em*noise_perc
 
                 name=""
@@ -128,6 +128,10 @@ class mitReader():
             self.data_to_use[int(key)*1000] = training_data_np
             self.labels_to_use[int(key)*1000] = target_labels_np
             self.reference_data[int(key)*1000] = clean_data_np 
+
+            training_data = []
+            target_labels = []
+            clean_data = []     
 
             print(self.data_to_use.keys(), self.reference_data.keys(), self.labels_to_use.keys())
 
